@@ -12,3 +12,4 @@ dist/
 *.egg-info
 merge.cmd
 .settings
+.github/workflows/test_pipeline.yaml

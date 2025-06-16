@@ -25,4 +25,4 @@ jobs:
       run: |
         # Connect to Server1, then Server2
         sshpass -p "$SERVER1_PASS" ssh -o StrictHostKeyChecking=no $SERVER1_USER@$SERVER1_HOST \
-        "sshpass -p '$SERVER2_PASS' ssh -o StrictHostKeyChecking=no $SERVER2_USER@$SERVER2_HOST 'echo Connected to Server2 && hostname'"
+        ssh 
