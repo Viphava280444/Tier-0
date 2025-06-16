@@ -7,7 +7,7 @@ on:
   #   branches: [ "Pipeline" ]
   workflow_dispatch:          
     inputs:                  
-      wget_url:               
+      message:               
         description: 'URL to download with wget'
         required: true         
         default: 'https://example.com/file.zip'
