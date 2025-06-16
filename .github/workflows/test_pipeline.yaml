@@ -1,27 +1,28 @@
-# .github/workflows/test-pipeline.yml
+# .github/workflows/vm-access.yml
 
 name: Test Pipeline
 
-# Trigger on push to any branch and pull requests to main
 on:
   push:
     branches: [ "Pipeline" ]
-    
+
 jobs:
-  test:
+  access-to-virtual-machine:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Install sshpass
+      run: sudo apt-get update && sudo apt-get install -y sshpass
     
-    # Step 2: Print basic info
-    - name: Print runner info
+    - name: Access to virtual machine
+      env:
+        SERVER1_HOST: ${{ secrets.SERVER1_HOST }}
+        SERVER1_USER: ${{ secrets.SERVER1_USER }}
+        SERVER1_PASS: ${{ secrets.SERVER1_PASS }}
+        SERVER2_HOST: ${{ secrets.SERVER2_HOST }}
+        SERVER2_USER: ${{ secrets.SERVER2_USER }}
+        SERVER2_PASS: ${{ secrets.SERVER2_PASS }}
       run: |
-        echo "🏃‍♂️ Runner OS: ${{ runner.os }}"
-    
-    # Step 3: List files in repository
-    - name: List repository files
-      run: |
-        echo "📁 Files in repository:"
-        ls -la
-    
-   
+        # Connect to Server1, then Server2
+        sshpass -p "$SERVER1_PASS" ssh -o StrictHostKeyChecking=no $SERVER1_USER@$SERVER1_HOST \
+        "sshpass -p '$SERVER2_PASS' ssh -o StrictHostKeyChecking=no $SERVER2_USER@$SERVER2_HOST 'echo Connected to Server2 && hostname'"
