@@ -3,8 +3,8 @@
 name: Test Pipeline
 
 on:
-  push:
-    branches: [ "Pipeline" ]
+  # push:
+  #   branches: [ "Pipeline" ]
   workflow_dispatch:          
     inputs:                  
       wget_url:               
