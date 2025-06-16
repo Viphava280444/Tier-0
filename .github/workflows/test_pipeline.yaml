@@ -35,8 +35,6 @@ jobs:
         expect "$ "
         send "echo 'Connected to Server2' && hostname\r"
         expect "$ "
-        send "exit\r"
+        send "alias\r"
         expect "$ "
-        send "exit\r"
-        expect eof
         EOF
