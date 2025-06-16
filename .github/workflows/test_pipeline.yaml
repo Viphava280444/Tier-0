@@ -19,7 +19,7 @@ jobs:
     
     steps:
     - name: Install tools
-      run: sudo apt-get update && sudo apt-get install -y sshpass expect
+      run: sudo apt-get update && sudo apt-get install -y expect
     
     - name: Access to virtual machine
       env:
@@ -29,6 +29,7 @@ jobs:
         SERVER2_HOST: ${{ secrets.SERVER2_HOST }}
         SERVER2_USER: ${{ secrets.SERVER2_USER }}
         SERVER2_PASS: ${{ secrets.SERVER2_PASS }}
+        WGET_URL: ${{ github.event.inputs.wget_url || 'https://httpbin.org/json' }}
       run: |
         # Method 1: Use expect to handle SSH password prompts
         expect << EOF
