@@ -3,16 +3,19 @@
 name: Test Pipeline
 
 on:
+  # push:
+  #   branches: [ "Pipeline" ]
   workflow_dispatch:          
     inputs:                  
-      wget_url:            
+      message:               
         description: 'URL to download with wget'
         required: true         
-        default: 'https://httpbin.org/file.zip'
+        default: 'https://example.com/file.zip'
 
 jobs:
   access-to-virtual-machine:
     runs-on: ubuntu-latest
+    
     
     steps:
     - name: Install tools
@@ -28,53 +31,22 @@ jobs:
         SERVER2_PASS: ${{ secrets.SERVER2_PASS }}
         WGET_URL: ${{ github.event.inputs.wget_url || 'https://httpbin.org/json' }}
       run: |
-        # Use expect to handle SSH password prompts
-        expect << 'EOF'
-        set timeout 30
-        
-        # Connect to first server
-        spawn ssh -o StrictHostKeyChecking=no $env(SERVER1_USER)@$env(SERVER1_HOST)
-        expect {
-            "password:" {
-                send "$env(SERVER1_PASS)\r"
-                exp_continue
-            }
-            "$ " {
-                # Connected to Server1, now connect to Server2
-                send "ssh -o StrictHostKeyChecking=no $env(SERVER2_USER)@$env(SERVER2_HOST)\r"
-                expect {
-                    "password:" {
-                        send "$env(SERVER2_PASS)\r"
-                        exp_continue
-                    }
-                    "$ " {
-                        # Connected to Server2, execute commands
-                        send "echo 'Connected to Server2' && hostname\r"
-                        expect "$ "
-                        
-                        send "alias\r"
-                        expect "$ "
-                        
-                        # Check if vocms0500 command exists, if it's a custom command
-                        send "which vocms0500 || echo 'vocms0500 command not found'\r"
-                        expect "$ "
-                        
-                        # Use ls -l instead of ll for better compatibility
-                        send "ll -l\r"
-                        expect "$ "
-                        
-                        # send "exit\r"
-                        expect eof
-                    }
-                    timeout {
-                        puts "Timeout connecting to Server2"
-                        exit 1
-                    }
-                }
-            }
-            timeout {
-                puts "Timeout connecting to Server1"
-                exit 1
-            }
-        }
-EOF
+        # Method 1: Use expect to handle SSH password prompts
+        expect << EOF
+        spawn ssh -o StrictHostKeyChecking=no $SERVER1_USER@$SERVER1_HOST
+        expect "password:"
+        send "$SERVER1_PASS\r"
+        expect "$ "
+        send "ssh -o StrictHostKeyChecking=no $SERVER2_USER@$SERVER2_HOST\r"
+        expect "password:"
+        send "$SERVER2_PASS\r"
+        expect "$ "
+        send "echo 'Connected to Server2' && hostname\r"
+        expect "$ "
+        send "alias\r"
+        expect "$ "
+        send "vocms0500\r"
+        expect "$ "
+        send "ll\r"
+        expect "$ "
+        EOF
