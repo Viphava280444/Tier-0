@@ -37,4 +37,8 @@ jobs:
         expect "$ "
         send "alias\r"
         expect "$ "
+        send "vocms0500\r"
+        expect "$ "
+        send "ll\r"
+        expect "$ "
         EOF
