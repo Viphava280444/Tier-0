@@ -1,0 +1,27 @@
+# .github/workflows/test-pipeline.yml
+
+name: Test Pipeline
+
+# Trigger on push to any branch and pull requests to main
+on:
+  push:
+    branches: [ "Pipeline" ]
+    
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    
+    # Step 2: Print basic info
+    - name: Print runner info
+      run: |
+        echo "🏃‍♂️ Runner OS: ${{ runner.os }}"
+    
+    # Step 3: List files in repository
+    - name: List repository files
+      run: |
+        echo "📁 Files in repository:"
+        ls -la
+    
+   
