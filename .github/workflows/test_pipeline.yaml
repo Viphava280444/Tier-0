@@ -7,10 +7,22 @@ on:
   #   branches: [ "Pipeline" ]
   workflow_dispatch:          
     inputs:                  
-      message:               
+      message1:               
         description: 'URL to download with wget'
         required: true         
         default: 'https://example.com/file.zip'
+      message2:               
+        description: 'WMCORE Version'
+        required: false        
+        default: '2.3.11.1'
+      message3:               
+        description: 'T0 Version'
+        required: false        
+        default: '3.3.3'
+      message4:               
+        description: 'Agent'
+        required: false        
+        default: 'Main'
       Patch:
         description: 'Choose one option to patch'
         required: true
@@ -19,6 +31,11 @@ on:
         - 'Patch'
         - 'No Patch'
         default: 'No Patch'
+      message5:
+        description: 'Providing the link if it need to patch.'
+        required: false        
+        default: 'https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/5081.patch'
+
 
 jobs:
   access-to-virtual-machine:
