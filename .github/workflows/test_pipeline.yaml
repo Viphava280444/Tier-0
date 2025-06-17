@@ -32,7 +32,7 @@ jobs:
         WGET_URL: ${{ github.event.inputs.message }} 
       run: |
         # Method 1: Use expect to handle SSH password prompts
-        expect << EOF
+        expect << 'EOF'
         spawn ssh -o StrictHostKeyChecking=no $SERVER1_USER@$SERVER1_HOST
         expect "password:"
         send "$SERVER1_PASS\r"
