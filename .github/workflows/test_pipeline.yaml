@@ -29,7 +29,7 @@ jobs:
         SERVER2_HOST: ${{ secrets.SERVER2_HOST }}
         SERVER2_USER: ${{ secrets.SERVER2_USER }}
         SERVER2_PASS: ${{ secrets.SERVER2_PASS }}
-        WGET_URL: ${{ github.event.inputs.wget_url || 'https://httpbin.org/json' }}
+        WGET_URL: ${{ github.event.inputs.message }} 
       run: |
         # Method 1: Use expect to handle SSH password prompts
         expect << EOF
@@ -46,6 +46,12 @@ jobs:
         send "alias\r"
         expect "$ "
         send "vocms0500\r"
+        expect "$ "
+        send "ll\r"
+        expect "$ "
+        send "cd ohm\r"
+        expect "$ "
+        send "cd wget '$env(WGET_URL)'\r"
         expect "$ "
         send "ll\r"
         expect "$ "
