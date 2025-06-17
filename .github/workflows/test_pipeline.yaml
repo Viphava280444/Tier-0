@@ -11,6 +11,14 @@ on:
         description: 'URL to download with wget'
         required: true         
         default: 'https://example.com/file.zip'
+      Patch:
+        description: 'Choose one option to patch'
+        required: true
+        type: choice
+        options:
+        - 'Patch'
+        - 'No Patch'
+        default: 'false'
 
 jobs:
   access-to-virtual-machine:
