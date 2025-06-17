@@ -3,15 +3,18 @@
 name: Test Pipeline
 
 on:
-  # push:
-  #   branches: [ "Pipeline" ]
+  push:
+    branches: [ "Pipeline" ]
   workflow_dispatch:          
     inputs:                  
       message:               
         description: 'URL to download with wget'
         required: true         
         default: 'https://example.com/file.zip'
-
+      target_branch:
+        description: 'Branch to run from'
+        required: false
+        default: 'Pipeline'
 jobs:
   access-to-virtual-machine:
     runs-on: ubuntu-latest
