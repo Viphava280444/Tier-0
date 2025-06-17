@@ -53,7 +53,7 @@ jobs:
         SERVER2_HOST: ${{ secrets.SERVER2_HOST }}
         SERVER2_USER: ${{ secrets.SERVER2_USER }}
         SERVER2_PASS: ${{ secrets.SERVER2_PASS }}
-        WGET_URL: ${{ github.event.inputs.message }} 
+        WGET_URL: ${{ github.event.inputs.message1 }} 
       run: |
         # Method 1: Use expect to handle SSH password prompts
         expect << 'EOF'
@@ -74,6 +74,8 @@ jobs:
         send "ll\r"
         expect "$ "
         send "cd ohm\r"
+        expect "$ "
+        send "rm -f ReplayOfflineConfiguration.py\r"
         expect "$ "
         send "wget '$env(WGET_URL)'\r"
         expect "$ "
