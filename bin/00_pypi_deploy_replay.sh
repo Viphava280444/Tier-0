@@ -14,10 +14,15 @@ then
     echo "Exiting"
     exit
 fi
+test=${TEST:-"hello"}
 
-WMAGENT_TAG=2.3.9.2
-TIER0_VERSION=3.2.9.1
+WMAGENT_TAG=${WMAGENT_TAG_VAR:-"2.3.9.2"}
+TIER0_VERSION=${TIER0_VERSION_VAR:-"3.2.9.1"}
+
 COUCH_TAG=3.2.2
+# WMAGENT_TAG=2.3.9.2
+# TIER0_VERSION=3.2.9.1
+# COUCH_TAG=3.2.2
 
 BASE_DIR=/data/tier0
 DEPLOY_DIR=$BASE_DIR/WMAgent.venv3
