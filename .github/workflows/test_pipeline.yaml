@@ -16,7 +16,6 @@ jobs:
   access-to-virtual-machine:
     runs-on: ubuntu-latest
     
-    
     steps:
     - name: Install tools
       run: sudo apt-get update && sudo apt-get install -y expect
@@ -33,13 +32,13 @@ jobs:
       run: |
         # Method 1: Use expect to handle SSH password prompts
         expect << 'EOF'
-        spawn ssh -o StrictHostKeyChecking=no $SERVER1_USER@$SERVER1_HOST
+        spawn ssh -o StrictHostKeyChecking=no $env(SERVER1_USER)@$env(SERVER1_HOST)
         expect "password:"
-        send "$SERVER1_PASS\r"
+        send "$env(SERVER1_PASS)\r"
         expect "$ "
-        send "ssh -o StrictHostKeyChecking=no $SERVER2_USER@$SERVER2_HOST\r"
+        send "ssh -o StrictHostKeyChecking=no $env(SERVER2_USER)@$env(SERVER2_HOST)\r"
         expect "password:"
-        send "$SERVER2_PASS\r"
+        send "$env(SERVER2_PASS)\r"
         expect "$ "
         send "echo 'Connected to Server2' && hostname\r"
         expect "$ "
