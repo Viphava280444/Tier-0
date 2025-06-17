@@ -51,7 +51,7 @@ jobs:
         expect "$ "
         send "cd ohm\r"
         expect "$ "
-        send "cd wget '$env(WGET_URL)'\r"
+        send "wget '$env(WGET_URL)'\r"
         expect "$ "
         send "ll\r"
         expect "$ "
