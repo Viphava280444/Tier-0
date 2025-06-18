@@ -67,6 +67,9 @@ jobs:
         REPLAY_OPTION: ${{ github.event.inputs.Replay }}  
         PATCH_OPTION: ${{ github.event.inputs.Patch }}        
         PATCH_URL: ${{ github.event.inputs.message5 }}
+        WMCORE_VERSION : ${{ github.event.inputs.message2 }}
+        T0_VERSION : ${{ github.event.inputs.message3 }}
+
 
       run: |
         # Method 1: Use expect to handle SSH password prompts
@@ -113,7 +116,24 @@ jobs:
         }
         send "rm -f /data/tier0/admin/ReplayOfflineConfiguration.py\r"
         expect "$ "
-        send "cp /data/tier0/admin/ReplayOfflineConfiguration.py\r"
+        send "SRC_FILE=/afs/cern.ch/user/c/cmst0/ohm/ReplayOfflineConfiguration.py\r"
+        expect "$ "
+        send "DEST_FILE=/data/tier0/admin/ReplayOfflineConfiguration.py\r"
+        expect "$ "
+        send "cp \$SRC_FILE \$DEST_FILE\r"
+        expect {
+            "$ " { }
+            timeout { puts "Timeout during file copy"; exit 1 }
+        }
+        send "export WMAGENT_TAG_VAR='$env(WMCORE_VERSION)'\r"
+        expect "$ "
+        send "export TIER0_VERSION_VAR='$env(T0_VERSION)'\r"
+        expect "$ "
+        send "source /afs/cern.ch/user/c/cmst0/ohm/00_pypi_deploy_replay.sh\r"
+        expect "$ "
+        send "y\r"
+        expect "$ "
+        send "start_agent\r"
         expect "$ "
 
         EOF
