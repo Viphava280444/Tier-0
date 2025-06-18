@@ -31,6 +31,16 @@ on:
         - 'Patch'
         - 'No Patch'
         default: 'No Patch'
+      Replay:
+        description: 'Choose the Replay'
+        required: true
+        type: choice
+        options:
+        - 'vocms047'
+        - 'vocms0500'
+        - 'vocms0501'
+        default: 'vocms047'
+      
       message5:
         description: 'Providing the link if it need to patch.'
         required: false        
@@ -54,6 +64,10 @@ jobs:
         SERVER2_USER: ${{ secrets.SERVER2_USER }}
         SERVER2_PASS: ${{ secrets.SERVER2_PASS }}
         WGET_URL: ${{ github.event.inputs.message1 }} 
+        REPLAY_OPTION: ${{ github.event.inputs.Replay }}  
+        PATCH_OPTION: ${{ github.event.inputs.Patch }}        
+        PATCH_URL: ${{ github.event.inputs.message5 }}
+
       run: |
         # Method 1: Use expect to handle SSH password prompts
         expect << 'EOF'
@@ -69,7 +83,7 @@ jobs:
         expect "$ "
         send "alias\r"
         expect "$ "
-        send "vocms0500\r"
+        send "$env(REPLAY_OPTION)\r"
         expect "$ "
         send "ll\r"
         expect "$ "
@@ -81,4 +95,25 @@ jobs:
         expect "$ "
         send "ll\r"
         expect "$ "
+        send "condor_rm -all\r"
+        expect "$ "
+        send "stop_agent\r"
+        expect "$ "
+
+        if {[string equal $env(PATCH_OPTION) "Patch"]} {
+            send "echo 'Applying patch...'\r"
+            expect "$ "
+            send "curl '$env(PATCH_URL)' | patch -f -d $WMA_DEPLOY_DIR/lib/python3.9/site-packages/ -p 3\r"
+            expect "$ "
+            send "echo 'Patch downloaded'\r"
+            expect "$ "
+        } else {
+            send "echo 'No patch requested, skipping...'\r"
+            expect "$ "
+        }
+        send "rm -f /data/tier0/admin/ReplayOfflineConfiguration.py\r"
+        expect "$ "
+        send "cp /data/tier0/admin/ReplayOfflineConfiguration.py\r"
+        expect "$ "
+
         EOF

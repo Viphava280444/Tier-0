@@ -97,8 +97,8 @@ chmod +x $DEPLOY_DIR/bin/00*
 chmod +x $DEPLOY_DIR/bin/t0
 chmod +x $DEPLOY_DIR/etc/Tier0Config.py
 
-echo "Applying patches"
-bash $BASE_DIR/00_pypi_patches.sh
+# echo "Applying patches"
+# bash $BASE_DIR/00_pypi_patches.sh
 
 
 echo "Now creating important T0 related environment variables"
