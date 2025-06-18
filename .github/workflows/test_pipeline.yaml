@@ -74,33 +74,48 @@ jobs:
       run: |
         # Method 1: Use expect to handle SSH password prompts
         expect << 'EOF'
+
         set timeout 1800
+
         spawn ssh -o StrictHostKeyChecking=no $env(SERVER1_USER)@$env(SERVER1_HOST)
         expect "password:"
+
         send "$env(SERVER1_PASS)\r"
         expect "$ "
+
         send "ssh -o StrictHostKeyChecking=no $env(SERVER2_USER)@$env(SERVER2_HOST)\r"
         expect "password:"
+
         send "$env(SERVER2_PASS)\r"
         expect "$ "
+
         send "echo 'Connected to Server2' && hostname\r"
         expect "$ "
+
         send "alias\r"
         expect "$ "
+
         send "$env(REPLAY_OPTION)\r"
         expect "$ "
+
         send "ll\r"
         expect "$ "
+
         send "cd ohm\r"
         expect "$ "
+
         send "rm -f ReplayOfflineConfiguration.py\r"
         expect "$ "
+
         send "wget '$env(WGET_URL)'\r"
         expect "$ "
+
         send "ll\r"
         expect "$ "
+
         send "condor_rm -all\r"
         expect "$ "
+
         send "stop_agent\r"
         expect "$ "
 
@@ -115,21 +130,28 @@ jobs:
             send "echo 'No patch requested, skipping...'\r"
             expect "$ "
         }
+
         send "rm -f /data/tier0/admin/ReplayOfflineConfiguration.py\r"
         expect "$ "
+
         send "SRC_FILE=/afs/cern.ch/user/c/cmst0/ohm/ReplayOfflineConfiguration.py\r"
         expect "$ "
+
         send "DEST_FILE=/data/tier0/admin/ReplayOfflineConfiguration.py\r"
         expect "$ "
+
         send "cp \$SRC_FILE \$DEST_FILE\r"
         expect {
             "$ " { }
             timeout { puts "Timeout during file copy"; exit 1 }
         }
+
         send "export WMAGENT_TAG_VAR='$env(WMCORE_VERSION)'\r"
         expect "$ "
+
         send "export TIER0_VERSION_VAR='$env(T0_VERSION)'\r"
         expect "$ "
+
         send "source /afs/cern.ch/user/c/cmst0/ohm/00_pypi_deploy_replay.sh\r"
         expect {
             "*Are you sure you wish to continue*" { 
@@ -141,6 +163,7 @@ jobs:
                 puts "Script taking too long, but may still be running"
             }
         }
+        
         send "start_agent\r"
         expect "$ "
 
