@@ -130,9 +130,16 @@ jobs:
         send "export TIER0_VERSION_VAR='$env(T0_VERSION)'\r"
         expect "$ "
         send "source /afs/cern.ch/user/c/cmst0/ohm/00_pypi_deploy_replay.sh\r"
-        expect "$ "
-        send "Y\r"
-        expect "$ "
+        expect {
+            "*Are you sure you wish to continue*" { 
+                send "Y\r"
+                exp_continue
+            }
+            -re ".*\\$ $" { }
+            timeout { 
+                puts "Script taking too long, but may still be running"
+            }
+        }
         send "start_agent\r"
         expect "$ "
 
