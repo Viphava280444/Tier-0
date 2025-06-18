@@ -131,7 +131,7 @@ jobs:
         expect "$ "
         send "source /afs/cern.ch/user/c/cmst0/ohm/00_pypi_deploy_replay.sh\r"
         expect "$ "
-        send "y\r"
+        send "Y\r"
         expect "$ "
         send "start_agent\r"
         expect "$ "
