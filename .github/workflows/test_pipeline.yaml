@@ -129,6 +129,7 @@ jobs:
         expect "$ "
         send "export TIER0_VERSION_VAR='$env(T0_VERSION)'\r"
         expect "$ "
+        set timeout 1800
         send "source /afs/cern.ch/user/c/cmst0/ohm/00_pypi_deploy_replay.sh\r"
         expect {
             "*Are you sure you wish to continue*" { 
