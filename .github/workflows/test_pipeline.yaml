@@ -1,6 +1,4 @@
-# .github/workflows/vm-access.yml
-
-name: Test Pipeline
+name: Test Pipeline for deploying replay
 
 on:
   # push:
@@ -163,7 +161,7 @@ jobs:
                 puts "Script taking too long, but may still be running"
             }
         }
-        
+
         send "start_agent\r"
         expect "$ "
 
