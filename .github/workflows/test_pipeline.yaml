@@ -74,6 +74,7 @@ jobs:
       run: |
         # Method 1: Use expect to handle SSH password prompts
         expect << 'EOF'
+        set timeout 1800
         spawn ssh -o StrictHostKeyChecking=no $env(SERVER1_USER)@$env(SERVER1_HOST)
         expect "password:"
         send "$env(SERVER1_PASS)\r"
@@ -129,7 +130,6 @@ jobs:
         expect "$ "
         send "export TIER0_VERSION_VAR='$env(T0_VERSION)'\r"
         expect "$ "
-        set timeout 1800
         send "source /afs/cern.ch/user/c/cmst0/ohm/00_pypi_deploy_replay.sh\r"
         expect {
             "*Are you sure you wish to continue*" { 
