@@ -96,7 +96,7 @@ jobs:
         send "$env(REPLAY_OPTION)\r"
         expect "$ "
 
-        send "ll\r"
+        send "source env.sh\r"
         expect "$ "
 
         send "cd ohm\r"
@@ -106,6 +106,28 @@ jobs:
         expect "$ "
 
         send "wget '$env(WGET_URL)'\r"
+        expect "$ "
+
+                # Check and rename any file with prefix before ReplayOfflineConfiguration.py
+        send "CONFIG_FILE=\\$(ls *ReplayOfflineConfiguration.py 2>/dev/null | head -1)\r"
+        expect "$ "
+        
+        send "if [ ! -z \"\\$CONFIG_FILE\" ] && [ \"\\$CONFIG_FILE\" != \"ReplayOfflineConfiguration.py\" ]; then\r"
+        expect "$ "
+        
+        send "echo \"Renaming \\$CONFIG_FILE to ReplayOfflineConfiguration.py\"\r"
+        expect "$ "
+        
+        send "mv \"\\$CONFIG_FILE\" \"ReplayOfflineConfiguration.py\"\r"
+        expect "$ "
+        
+        send "else\r"
+        expect "$ "
+        
+        send "echo 'Configuration file already named correctly or not found'\r"
+        expect "$ "
+        
+        send "fi\r"
         expect "$ "
 
         send "ll\r"
@@ -120,7 +142,7 @@ jobs:
         if {[string equal $env(PATCH_OPTION) "Patch"]} {
             send "echo 'Applying patch...'\r"
             expect "$ "
-            send "curl '$env(PATCH_URL)' | patch -f -d $WMA_DEPLOY_DIR/lib/python3.9/site-packages/ -p 3\r"
+            send "curl '$env(PATCH_URL)' | patch -f -d $WMA_DEPLOY_DIR/lib/python3.12/site-packages/ -p 3\r"
             expect "$ "
             send "echo 'Patch downloaded'\r"
             expect "$ "
@@ -132,7 +154,7 @@ jobs:
         send "rm -f /data/tier0/admin/ReplayOfflineConfiguration.py\r"
         expect "$ "
 
-        send "SRC_FILE=/afs/cern.ch/user/c/cmst0/ohm/ReplayOfflineConfiguration.py\r"
+        send "SRC_FILE=/afs/cern.ch/work/c/cmst0/private/scripts/ohm/ReplayOfflineConfiguration.py\r"
         expect "$ "
 
         send "DEST_FILE=/data/tier0/admin/ReplayOfflineConfiguration.py\r"
@@ -150,7 +172,7 @@ jobs:
         send "export TIER0_VERSION_VAR='$env(T0_VERSION)'\r"
         expect "$ "
 
-        send "source /afs/cern.ch/user/c/cmst0/ohm/00_pypi_deploy_replay.sh\r"
+        send "source /afs/cern.ch/work/c/cmst0/private/scripts/ohm/00_pypi_deploy_replay.sh\r"
         expect {
             "*Are you sure you wish to continue*" { 
                 send "Y\r"
