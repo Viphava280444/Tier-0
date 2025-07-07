@@ -156,11 +156,10 @@ jobs:
         send "source /data/tier0/ReplayPipeline/00_pypi_deploy_replay.sh\r"
         
         expect "*Are you sure you wish to continue? (Y/n)*"
+
         send "Y\r"
-        
-        expect "*Deployment finished*"
-        
-        expect -re {.*\$\s*}
+    
+        expect -re {.*\$\s*} { }
 
         send "echo 'Deployment completed, starting agent...'\r"
         expect -re {.*\$\s*} { }
