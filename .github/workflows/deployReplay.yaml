@@ -80,13 +80,13 @@ jobs:
         set timeout 1800
 
         spawn ssh -o StrictHostKeyChecking=no $env(SERVER1_USER)@$env(SERVER1_HOST)
-        expect "password:"
+        expect "*assword*"
 
         send "$env(SERVER1_PASS)\r"
         expect "$ "
 
         send "ssh -o StrictHostKeyChecking=no $env(SERVER2_USER)@$env(SERVER2_HOST)\r"
-        expect "password:"
+        expect "*assword*"
 
         send "$env(SERVER2_PASS)\r"
         expect "$ "
