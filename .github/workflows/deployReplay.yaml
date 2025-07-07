@@ -113,25 +113,25 @@ jobs:
         expect "$ "
 
         send "CONFIG_FILE=\$(ls *ReplayOfflineConfiguration.py 2>/dev/null | head -1)\r"
-        expect "$ "
+        expect -re {.*\$ }
 
         send "if \[ ! -z \"\$CONFIG_FILE\" \] && \[ \"\$CONFIG_FILE\" != \"ReplayOfflineConfiguration.py\" \]; then\r"
-        expect "$ "
+        expect -re {.*\$ }
 
         send "echo \"Renaming \$CONFIG_FILE to ReplayOfflineConfiguration.py\"\r"
-        expect "$ "
+        expect -re {.*\$ }
 
         send "mv \"\$CONFIG_FILE\" \"ReplayOfflineConfiguration.py\"\r"
-        expect "$ "
+        expect -re {.*\$ }
 
         send "else\r"
-        expect "$ "
+        expect -re {.*\$ }
 
         send "echo 'Configuration file already named correctly or not found'\r"
-        expect "$ "
+        expect -re {.*\$ }
 
         send "fi\r"
-        expect "$ "
+        expect -re {.*\$ }
 
         send "ll\r"
         expect "$ "
