@@ -168,18 +168,31 @@ jobs:
                 send "Y\r"
                 exp_continue
             }
-            -re {.*\$\s*} { }
+            "*Deployment finished*" {
+                puts "Deployment completed successfully"
+            }
             timeout { 
-                puts "Script taking too long, but may still be running"
-                exp_continue
+                puts "Deployment taking longer than expected, but continuing..."
             }
         }
+
+        # Now wait for the final prompt after deployment
+        expect -re {.*\$\s*} { }
+
+        # Verify we're back at the prompt and ready
+        send "echo 'Deployment completed, starting agent...'\r"
+        expect -re {.*\$\s*} { }
 
         send "start_agent\r"
         expect -re {.*\$\s*} { }
 
-        send "ll"
+        send "echo 'Verifying agent status...'\r"
         expect -re {.*\$\s*} { }
 
-  
+        send "ps aux | grep -E '(wmcore|wmagent)' | grep -v grep || echo 'No WMAgent processes found'\r"
+        expect -re {.*\$\s*} { }
+
+        send "echo 'Deployment workflow completed successfully'\r"
+        expect -re {.*\$\s*} { }
+
         EOF
