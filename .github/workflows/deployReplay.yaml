@@ -166,8 +166,7 @@ jobs:
         send "echo 'Verifying agent status...'\r"
         expect -re {.*\$\s*} { }
 
-
-        send "timeout 300 less +F /data/tier0/WMAgent.venv3/srv/wmagent/$env(WMCORE_VERSION)/install/Tier0Feeder/ComponentLog\r"
+        send "timeout 300 tail -f /data/tier0/WMAgent.venv3/srv/wmagent/$env(WMCORE_VERSION)/install/Tier0Feeder/ComponentLog\r"
         expect -re {.*\$\s*} { }
 
         send "ps aux | grep -E '(wmcore|wmagent)' | grep -v grep || echo 'No WMAgent processes found'\r"
