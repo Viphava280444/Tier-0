@@ -114,22 +114,7 @@ jobs:
         send "CONFIG_FILE=\$(ls *ReplayOfflineConfiguration.py 2>/dev/null | head -1)\r"
         expect -re {.*\$\s*} { }
 
-        send "if \[ ! -z \"\$CONFIG_FILE\" \] && \[ \"\$CONFIG_FILE\" != \"ReplayOfflineConfiguration.py\" \]; then\r"
-        expect -re {.*\$\s*} { }
-
-        send "echo \"Renaming \$CONFIG_FILE to ReplayOfflineConfiguration.py\"\r"
-        expect -re {.*\$\s*} { }
-
-        send "mv \"\$CONFIG_FILE\" \"ReplayOfflineConfiguration.py\"\r"
-        expect -re {.*\$\s*} { }
-
-        send "else\r"
-        expect -re {.*\$\s*} { }
-
-        send "echo 'Configuration file already named correctly or not found'\r"
-        expect -re {.*\$\s*} { }
-
-        send "fi\r"
+        send "if \[ ! -z \"\$CONFIG_FILE\" \] && \[ \"\$CONFIG_FILE\" != \"ReplayOfflineConfiguration.py\" \]; then echo \"Renaming \$CONFIG_FILE to ReplayOfflineConfiguration.py\"; mv \"\$CONFIG_FILE\" \"ReplayOfflineConfiguration.py\"; else echo 'Configuration file already named correctly or not found'; fi\r"
         expect -re {.*\$\s*} { }
 
         send "ll\r"
@@ -197,6 +182,9 @@ jobs:
         expect -re {.*\$\s*} { }
 
         send "ps aux | grep -E '(wmcore|wmagent)' | grep -v grep || echo 'No WMAgent processes found'\r"
+        expect -re {.*\$\s*} { }
+
+        send "echo 'Deployment workflow completed successfully'\r"
         expect -re {.*\$\s*} { }
 
         EOF
