@@ -175,9 +175,18 @@ jobs:
                 send "Y\r"
                 exp_continue
             }
-            -re ".*\\$ $" { }
+            "*wish to continue*" {
+                send "Y\r"
+                exp_continue
+            }
+            "*(Y/n)*" {
+                send "Y\r"
+                exp_continue
+            }
+            -re {.*\$\s*} { }
             timeout { 
                 puts "Script taking too long, but may still be running"
+                exp_continue
             }
         }
 
