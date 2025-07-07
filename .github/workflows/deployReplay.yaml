@@ -19,6 +19,20 @@ on:
         - 'vocms0500'
         default: 'vocms047'
 
+      Patch:
+        description: 'Choose one option to patch'
+        required: true
+        type: choice
+        options:
+        - 'Patch'
+        - 'No Patch'
+        default: 'No Patch'
+
+      message5:
+        description: 'Providing the commit number if it need to patch. (5000, 5001)'
+        required: false        
+        default: '5081'
+
       message2:               
         description: 'WMCORE Version'
         required: false        
@@ -34,22 +48,7 @@ on:
         required: false        
         default: '3.12'
 
-      Patch:
-        description: 'Choose one option to patch'
-        required: true
-        type: choice
-        options:
-        - 'Patch'
-        - 'No Patch'
-        default: 'No Patch'
-
-      message5:
-        description: 'Providing the commit number if it need to patch. (5000, 5001)'
-        required: false        
-        default: '5081'
-
-
-      
+    
 jobs:
   deploy-the-replay:
     runs-on: ubuntu-24.04
@@ -168,7 +167,7 @@ jobs:
         expect -re {.*\$\s*} { }
 
 
-        send "timeout 300 less +F $install/Tier0Feeder/ComponentLog\r"
+        send "timeout 300 less +F /data/tier0/WMAgent.venv3/srv/wmagent/$env(WMCORE_VERSION)/install/Tier0Feeder/ComponentLog\r"
         expect -re {.*\$\s*} { }
 
         send "ps aux | grep -E '(wmcore|wmagent)' | grep -v grep || echo 'No WMAgent processes found'\r"
