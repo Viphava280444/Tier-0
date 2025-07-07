@@ -168,12 +168,6 @@ jobs:
                 send "Y\r"
                 exp_continue
             }
-            "*Deployment finished*" {
-                puts "Deployment completed successfully"
-            }
-            timeout { 
-                puts "Deployment taking longer than expected, but continuing..."
-            }
         }
 
         # Now wait for the final prompt after deployment
