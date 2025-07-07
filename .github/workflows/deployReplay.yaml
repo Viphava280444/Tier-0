@@ -141,36 +141,42 @@ jobs:
         send "stop_agent\r"
         expect -re {.*\$\s*} { }
 
-        # Fixed conditional logic for patching
-        if {[string equal $env(PATCH_OPTION) "Patch"]} {
-            send "echo 'Applying patches...'\r"
-            expect -re {.*\$\s*} { }
-            
-            # Split the patch numbers and apply each one
-            send "IFS=',' read -ra PATCHES <<< '$env(PATCH_URL)'\r"
-            expect -re {.*\$\s*} { }
-            
-            send "for patch_num in \"\${PATCHES\[@\]\}\"; do\r"
-            expect -re {.*\$\s*} { }
-            
-            send "  patch_num=\$(echo \$patch_num | tr -d ' ')\r"
-            expect -re {.*\$\s*} { }
-            
-            send "  echo \"Applying patch PR #\$patch_num\"\r"
-            expect -re {.*\$\s*} { }
-            
-            send "  curl https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\${patch_num}.patch | patch -f -d \$WMA_DEPLOY_DIR/lib/python$env(PYTHON_VERSION)/site-packages/ -p 3\r"
-            expect -re {.*\$\s*} { }
-            
-            send "  echo \"Patch \$patch_num downloaded\"\r"
-            expect -re {.*\$\s*} { }
-            
-            send "done\r"
-            expect -re {.*\$\s*} { }
-        } else {
-            send "echo 'No patch requested, skipping...'\r"
-            expect -re {.*\$\s*} { }
-        }
+        # Handle patching based on PATCH_OPTION
+        send "if \[ \"$env(PATCH_OPTION)\" = \"Patch\" \]; then\r"
+        expect -re {.*\$\s*} { }
+        
+        send "echo 'Applying patches...'\r"
+        expect -re {.*\$\s*} { }
+        
+        send "IFS=',' read -ra PATCHES <<< '$env(PATCH_URL)'\r"
+        expect -re {.*\$\s*} { }
+        
+        send "for patch_num in \"\${PATCHES\[@\]\}\"; do\r"
+        expect -re {.*\$\s*} { }
+        
+        send "  patch_num=\$(echo \$patch_num | tr -d ' ')\r"
+        expect -re {.*\$\s*} { }
+        
+        send "  echo \"Applying patch PR #\$patch_num\"\r"
+        expect -re {.*\$\s*} { }
+        
+        send "  curl https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\${patch_num}.patch | patch -f -d \$WMA_DEPLOY_DIR/lib/python$env(PYTHON_VERSION)/site-packages/ -p 3\r"
+        expect -re {.*\$\s*} { }
+        
+        send "  echo \"Patch \$patch_num applied\"\r"
+        expect -re {.*\$\s*} { }
+        
+        send "done\r"
+        expect -re {.*\$\s*} { }
+        
+        send "else\r"
+        expect -re {.*\$\s*} { }
+        
+        send "echo 'No patch requested, skipping...'\r"
+        expect -re {.*\$\s*} { }
+        
+        send "fi\r"
+        expect -re {.*\$\s*} { }
 
         send "rm -f /data/tier0/admin/ReplayOfflineConfiguration.py\r"
         expect -re {.*\$\s*} { }
