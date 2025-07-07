@@ -1,30 +1,24 @@
 name: Pipeline for deploy the replay
 
 on:
-  # push:
-  #   branches: [ "Pipeline" ]
-  workflow_dispatch:          
-    inputs:                  
-      message1:               
+  workflow_dispatch:
+    inputs:
+      message1:
         description: 'URL to download with wget'
-        required: true         
+        required: true
         default: 'https://raw.githubusercontent.com/dmwm/T0/refs/heads/master/etc/ReplayOfflineConfiguration.py'
-
-      message2:               
+      message2:
         description: 'WMCORE Version'
-        required: false        
+        required: false
         default: '2.4.0'
-
-      message3:               
+      message3:
         description: 'T0 Version'
-        required: false        
+        required: false
         default: '3.4.0'
-
-      message4:               
+      message4:
         description: 'Python Version'
-        required: false        
+        required: false
         default: '3.12'
-
       Patch:
         description: 'Choose one option to patch'
         required: true
@@ -33,12 +27,10 @@ on:
         - 'Patch'
         - 'No Patch'
         default: 'No Patch'
-
       message5:
         description: 'Providing the commit number if it need to patch. (5000, 5001)'
-        required: false        
+        required: false
         default: '5081'
-
       Replay:
         description: 'Choose the Replay'
         required: true
@@ -47,15 +39,13 @@ on:
         - 'vocms047'
         - 'vocms0500'
         default: 'vocms047'
-      
+
 jobs:
   deploy-the-replay:
     runs-on: ubuntu-24.04
-    
     steps:
     - name: Install tools
       run: sudo apt-get install -y expect
-    
     - name: Access to virtual machine and run the script
       env:
         SERVER1_HOST: ${{ secrets.SERVER1_HOST }}
@@ -64,152 +54,268 @@ jobs:
         SERVER2_HOST: ${{ secrets.SERVER2_HOST }}
         SERVER2_USER: ${{ secrets.SERVER2_USER }}
         SERVER2_PASS: ${{ secrets.SERVER2_PASS }}
-        WGET_URL: ${{ github.event.inputs.message1 }} 
-        REPLAY_OPTION: ${{ github.event.inputs.Replay }}  
-        PATCH_OPTION: ${{ github.event.inputs.Patch }}        
+        WGET_URL: ${{ github.event.inputs.message1 }}
+        REPLAY_OPTION: ${{ github.event.inputs.Replay }}
+        PATCH_OPTION: ${{ github.event.inputs.Patch }}
         PATCH_URL: ${{ github.event.inputs.message5 }}
-        WMCORE_VERSION : ${{ github.event.inputs.message2 }}
-        T0_VERSION : ${{ github.event.inputs.message3 }}
-        PYTHON_VERSION : ${{ github.event.inputs.message4 }}
-
-
+        WMCORE_VERSION: ${{ github.event.inputs.message2 }}
+        T0_VERSION: ${{ github.event.inputs.message3 }}
+        PYTHON_VERSION: ${{ github.event.inputs.message4 }}
       run: |
         # Method 1: Use expect to handle SSH password prompts
         expect << 'EOF'
-
         set timeout 1800
+        exp_internal 1
 
         spawn ssh -o StrictHostKeyChecking=no $env(SERVER1_USER)@$env(SERVER1_HOST)
-        expect "*assword*"
-
-        send "$env(SERVER1_PASS)\r"
-        expect "$ "
+        expect {
+            "*assword*" { send "$env(SERVER1_PASS)\r" }
+            timeout { puts "Timeout waiting for password prompt on Server1"; exit 1 }
+        }
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after Server1 login"; exit 1 }
+        }
 
         send "ssh -o StrictHostKeyChecking=no $env(SERVER2_USER)@$env(SERVER2_HOST)\r"
-        expect "*assword*"
-
-        send "$env(SERVER2_PASS)\r"
-        expect "$ "
+        expect {
+            "*assword*" { send "$env(SERVER2_PASS)\r" }
+            timeout { puts "Timeout waiting for password prompt on Server2"; exit 1 }
+        }
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after Server2 login"; exit 1 }
+        }
 
         send "echo 'Connected to Server2' && hostname\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after hostname"; exit 1 }
+        }
 
         send "alias\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after alias"; exit 1 }
+        }
 
         send "$env(REPLAY_OPTION)\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after REPLAY_OPTION"; exit 1 }
+        }
 
         send "source env.sh\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after sourcing env.sh"; exit 1 }
+        }
 
         send "cd /data/tier0/ReplayPipeline\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after cd"; exit 1 }
+        }
+
+        send "rm -f /data/tier0/ReplayPipeline/OXYReplayOfflineConfiguration.py.*\r"
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after cleaning old files"; exit 1 }
+        }
 
         send "rm -f ReplayOfflineConfiguration.py\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after rm ReplayOfflineConfiguration.py"; exit 1 }
+        }
 
         send "wget '$env(WGET_URL)'\r"
-        expect -re {.*\$\s*} { }
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after wget"; exit 1 }
+        }
 
         send "CONFIG_FILE=\$(ls *ReplayOfflineConfiguration.py 2>/dev/null | head -1)\r"
-        expect -re {.*\$\s*} { }
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after setting CONFIG_FILE"; exit 1 }
+        }
+
+        send "[ -f \"\$CONFIG_FILE\" ] || { echo 'CONFIG_FILE does not exist'; exit 1; }\r"
+        expect {
+            -re {.*\$\s*} { }
+            "CONFIG_FILE does not exist" { puts "CONFIG_FILE not found"; exit 1 }
+            timeout { puts "Timeout waiting for prompt after file check"; exit 1 }
+        }
 
         send "if \[ ! -z \"\$CONFIG_FILE\" \] && \[ \"\$CONFIG_FILE\" != \"ReplayOfflineConfiguration.py\" \]; then\r"
-        expect -re {.*\$\s*} { }
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after if condition"; exit 1 }
+        }
 
         send "echo \"Renaming \$CONFIG_FILE to ReplayOfflineConfiguration.py\"\r"
-        expect -re {.*\$\s*} { }
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after echo rename"; exit 1 }
+        }
 
-        send "mv \"\$CONFIG_FILE\" \"ReplayOfflineConfiguration.py\"\r"
-        expect -re {.*\$\s*} { }
+        send "mv \"\$CONFIG_FILE\" \"ReplayOfflineConfiguration.py\" || { echo 'Move failed'; exit 1; }\r"
+        expect {
+            -re {.*\$\s*} { }
+            "Move failed" { puts "Failed to rename CONFIG_FILE"; exit 1 }
+            timeout { puts "Timeout waiting for prompt after mv"; exit 1 }
+        }
 
         send "else\r"
-        expect -re {.*\$\s*} { }
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after else"; exit 1 }
+        }
 
         send "echo 'Configuration file already named correctly or not found'\r"
-        expect -re {.*\$\s*} { }
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after echo else"; exit 1 }
+        }
 
         send "fi\r"
-        expect -re {.*\$\s*} { }
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after fi"; exit 1 }
+        }
 
         send "ll\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after ll"; exit 1 }
+        }
 
         send "condor_rm -all\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after condor_rm"; exit 1 }
+        }
 
         send "stop_agent\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after stop_agent"; exit 1 }
+        }
 
-        if {[string equal $env(PATCH_OPTION) "Patch"]} {
+        if { [string equal $env(PATCH_OPTION) "Patch"] } {
             send "echo 'Applying patches...'\r"
-            expect "$ "
-            
-            # Split the patch numbers and apply each one
+            expect {
+                -re {.*\$\s*} { }
+                timeout { puts "Timeout waiting for prompt after echo patches"; exit 1 }
+            }
+
             send "IFS=',' read -ra PATCHES <<< '$env(PATCH_URL)'\r"
-            expect "$ "
-            
-            send "for patch_num in \"\${PATCHES\[@\]\}\"; do\r"
-            expect "$ "
-            
+            expect {
+                -re {.*\$\s*} { }
+                timeout { puts "Timeout waiting for prompt after setting PATCHES"; exit 1 }
+            }
+
+            send "for patch_num in \"\${PATCHES[@]}\"; do\r"
+            expect {
+                -re {.*\$\s*} { }
+                timeout { puts "Timeout waiting for prompt after for loop start"; exit 1 }
+            }
+
             send "  patch_num=\$(echo \$patch_num | tr -d ' ')\r"
-            expect "$ "
-            
+            expect {
+                -re {.*\$\s*} { }
+                timeout { puts "Timeout waiting for prompt after trimming patch_num"; exit 1 }
+            }
+
             send "  echo \"Applying patch PR #\$patch_num\"\r"
-            expect "$ "
-            
+            expect {
+                -re {.*\$\s*} { }
+                timeout { puts "Timeout waiting for prompt after echo patch_num"; exit 1 }
+            }
+
             send "  curl https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\\${patch_num}.patch | patch -f -d \$WMA_DEPLOY_DIR/lib/python$env(PYTHON_VERSION)/site-packages/ -p 3\r"
-            expect "$ "
-            
+            expect {
+                -re {.*\$\s*} { }
+                timeout { puts "Timeout waiting for prompt after applying patch"; exit 1 }
+            }
+
             send "  echo \"Patch \$patch_num downloaded\"\r"
-            expect "$ "
-            
+            expect {
+                -re {.*\$\s*} { }
+                timeout { puts "Timeout waiting for prompt after patch downloaded echo"; exit 1 }
+            }
+
             send "done\r"
-            expect "$ "
-            
+            expect {
+                -re {.*\$\s*} { }
+                timeout { puts "Timeout waiting for prompt after for loop end"; exit 1 }
+            }
         } else {
             send "echo 'No patch requested, skipping...'\r"
-            expect "$ "
+            expect {
+                -re {.*\$\s*} { }
+                timeout { puts "Timeout waiting for prompt after no patch echo"; exit 1 }
+            }
         }
 
         send "rm -f /data/tier0/admin/ReplayOfflineConfiguration.py\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after rm admin config"; exit 1 }
+        }
 
         send "SRC_FILE=/data/tier0/ReplayPipeline/ReplayOfflineConfiguration.py\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after setting SRC_FILE"; exit 1 }
+        }
 
         send "DEST_FILE=/data/tier0/admin/ReplayOfflineConfiguration.py\r"
-        expect "$ "
-
-        send "cp \$SRC_FILE \$DEST_FILE\r"
         expect {
-            "$ " { }
-            timeout { puts "Timeout during file copy"; exit 1 }
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after setting DEST_FILE"; exit 1 }
+        }
+
+        send "cp \$SRC_FILE \$DEST_FILE || { echo 'Copy failed'; exit 1; }\r"
+        expect {
+            -re {.*\$\s*} { }
+            "Copy failed" { puts "Failed to copy configuration file"; exit 1 }
+            timeout { puts "Timeout waiting for prompt after cp"; exit 1 }
         }
 
         send "export WMAGENT_TAG_VAR='$env(WMCORE_VERSION)'\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after export WMAGENT_TAG_VAR"; exit 1 }
+        }
 
         send "export TIER0_VERSION_VAR='$env(T0_VERSION)'\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after export TIER0_VERSION_VAR"; exit 1 }
+        }
 
         send "export PYTHON_VERSION_VAR='$env(PYTHON_VERSION)'\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after export PYTHON_VERSION_VAR"; exit 1 }
+        }
 
         send "source /data/tier0/ReplayPipeline/00_pypi_deploy_replay.sh\r"
         expect {
-            "*Are you sure you wish to continue*" { 
+            "*Are you sure you wish to continue*" {
                 send "Y\r"
                 exp_continue
             }
-            -re ".*\\$ $" { }
-            timeout { 
-                puts "Script taking too long, but may still be running"
-            }
+            -re {.*\$\s*} { }
+            timeout { puts "Script taking too long, but may still be running"; exit 1 }
         }
 
         send "start_agent\r"
-        expect "$ "
+        expect {
+            -re {.*\$\s*} { }
+            timeout { puts "Timeout waiting for prompt after start_agent"; exit 1 }
+        }
 
         EOF
