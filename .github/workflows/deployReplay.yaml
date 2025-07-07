@@ -122,7 +122,7 @@ jobs:
         expect -re {.*\$ }
 
         send "mv \"\$CONFIG_FILE\" \"ReplayOfflineConfiguration.py\"\r"
-        expect -re {.*\$ }
+        expect -re {.*\$ } {}
 
         send "else\r"
         expect -re {.*\$ }
