@@ -1,4 +1,4 @@
-name: Test Pipeline for deploying replay
+name: Pipeline for deploy the replay
 
 on:
   # push:
@@ -8,19 +8,23 @@ on:
       message1:               
         description: 'URL to download with wget'
         required: true         
-        default: 'https://example.com/file.zip'
+        default: 'https://raw.githubusercontent.com/dmwm/T0/refs/heads/master/etc/ReplayOfflineConfiguration.py'
+
       message2:               
         description: 'WMCORE Version'
         required: false        
-        default: '2.3.11.1'
+        default: '2.4.0'
+
       message3:               
         description: 'T0 Version'
         required: false        
-        default: '3.3.3'
+        default: '3.4.0'
+
       message4:               
-        description: 'Agent'
+        description: 'Python Version'
         required: false        
-        default: 'Main'
+        default: '3.12'
+
       Patch:
         description: 'Choose one option to patch'
         required: true
@@ -29,6 +33,12 @@ on:
         - 'Patch'
         - 'No Patch'
         default: 'No Patch'
+
+      message5:
+        description: 'Providing the commit number if it need to patch. (5000, 5001)'
+        required: false        
+        default: '5081'
+
       Replay:
         description: 'Choose the Replay'
         required: true
@@ -36,24 +46,17 @@ on:
         options:
         - 'vocms047'
         - 'vocms0500'
-        - 'vocms0501'
         default: 'vocms047'
       
-      message5:
-        description: 'Providing the link if it need to patch.'
-        required: false        
-        default: 'https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/5081.patch'
-
-
 jobs:
-  access-to-virtual-machine:
-    runs-on: ubuntu-latest
+  deploy-the-replay:
+    runs-on: ubuntu-24.04
     
     steps:
     - name: Install tools
       run: sudo apt-get update && sudo apt-get install -y expect
     
-    - name: Access to virtual machine
+    - name: Access to virtual machine and run the script
       env:
         SERVER1_HOST: ${{ secrets.SERVER1_HOST }}
         SERVER1_USER: ${{ secrets.SERVER1_USER }}
@@ -67,6 +70,7 @@ jobs:
         PATCH_URL: ${{ github.event.inputs.message5 }}
         WMCORE_VERSION : ${{ github.event.inputs.message2 }}
         T0_VERSION : ${{ github.event.inputs.message3 }}
+        PYTHON_VERSION : ${{ github.event.inputs.message4 }}
 
 
       run: |
@@ -99,7 +103,7 @@ jobs:
         send "source env.sh\r"
         expect "$ "
 
-        send "cd ohm\r"
+        send "cd /data/tier0/ReplayPipeline\r"
         expect "$ "
 
         send "rm -f ReplayOfflineConfiguration.py\r"
@@ -108,7 +112,6 @@ jobs:
         send "wget '$env(WGET_URL)'\r"
         expect "$ "
 
-                # Check and rename any file with prefix before ReplayOfflineConfiguration.py
         send "CONFIG_FILE=\\$(ls *ReplayOfflineConfiguration.py 2>/dev/null | head -1)\r"
         expect "$ "
         
@@ -140,12 +143,31 @@ jobs:
         expect "$ "
 
         if {[string equal $env(PATCH_OPTION) "Patch"]} {
-            send "echo 'Applying patch...'\r"
+            send "echo 'Applying patches...'\r"
             expect "$ "
-            send "curl '$env(PATCH_URL)' | patch -f -d $WMA_DEPLOY_DIR/lib/python3.12/site-packages/ -p 3\r"
+            
+            # Split the patch numbers and apply each one
+            send "IFS=',' read -ra PATCHES <<< '$env(PATCH_URL)'\r"
             expect "$ "
-            send "echo 'Patch downloaded'\r"
+            
+            send "for patch_num in \"\${PATCHES\[@\]\}\"; do\r"
             expect "$ "
+            
+            send "  patch_num=\\$(echo \\$patch_num | tr -d ' ')\r"
+            expect "$ "
+            
+            send "  echo \"Applying patch PR #\\$patch_num\"\r"
+            expect "$ "
+            
+            send "  curl https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\\${patch_num}.patch | patch -f -d \$WMA_DEPLOY_DIR/lib/python$env(PYTHON_VERSION)/site-packages/ -p 3\r"
+            expect "$ "
+            
+            send "  echo \"Patch \\$patch_num downloaded\"\r"
+            expect "$ "
+            
+            send "done\r"
+            expect "$ "
+            
         } else {
             send "echo 'No patch requested, skipping...'\r"
             expect "$ "
@@ -154,7 +176,7 @@ jobs:
         send "rm -f /data/tier0/admin/ReplayOfflineConfiguration.py\r"
         expect "$ "
 
-        send "SRC_FILE=/afs/cern.ch/work/c/cmst0/private/scripts/ohm/ReplayOfflineConfiguration.py\r"
+        send "SRC_FILE=/data/tier0/ReplayPipeline/ReplayOfflineConfiguration.py\r"
         expect "$ "
 
         send "DEST_FILE=/data/tier0/admin/ReplayOfflineConfiguration.py\r"
@@ -172,7 +194,10 @@ jobs:
         send "export TIER0_VERSION_VAR='$env(T0_VERSION)'\r"
         expect "$ "
 
-        send "source /afs/cern.ch/work/c/cmst0/private/scripts/ohm/00_pypi_deploy_replay.sh\r"
+        send "export PYTHON_VERSION_VAR='$env(PYTHON_VERSION)'\r"
+        expect "$ "
+
+        send "source /data/tier0/ReplayPipeline/00_pypi_deploy_replay.sh\r"
         expect {
             "*Are you sure you wish to continue*" { 
                 send "Y\r"

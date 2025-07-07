@@ -16,8 +16,9 @@ then
 fi
 test=${TEST:-"hello"}
 
-WMAGENT_TAG=${WMAGENT_TAG_VAR:-"2.3.9.2"}
-TIER0_VERSION=${TIER0_VERSION_VAR:-"3.2.9.1"}
+WMAGENT_TAG=${WMAGENT_TAG_VAR}
+TIER0_VERSION=${TIER0_VERSION_VAR}
+PYTHON_VERSION=${PYTHON_VERSION_VAR}
 
 COUCH_TAG=3.2.2
 # WMAGENT_TAG=2.3.9.2
@@ -68,7 +69,8 @@ wget $WMA_VENV_DEPLOY_SCRIPT -O $BASE_DIR/deploy-wmagent-venv.sh
 sed -i 's|\$WMA_CERTS_DIR/myproxy.pem|\$WMA_CERTS_DIR/robot-proxy-vocms001.pem|g' $BASE_DIR/deploy-wmagent-venv.sh
 #bash $BASE_DIR/deploy-wmagent-venv.sh -t $WMAGENT_TAG -d $DEPLOY_DIR -y -s
 
-bash $BASE_DIR/deploy-wmagent-venv.sh -t $WMAGENT_TAG -d $DEPLOY_DIR -y
+# bash $BASE_DIR/deploy-wmagent-venv.sh -t $WMAGENT_TAG -d $DEPLOY_DIR -y
+bash $BASE_DIR/deploy-wmagent-venv.sh -t $WMAGENT_TAG -d $DEPLOY_DIR -p /usr/bin/python$PYTHON_VERSION -y
 
 #######################################################################
 echo "Setting up secrets file"
