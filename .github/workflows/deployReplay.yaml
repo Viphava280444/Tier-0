@@ -83,31 +83,31 @@ jobs:
         expect "*assword*"
 
         send "$env(SERVER1_PASS)\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "ssh -o StrictHostKeyChecking=no $env(SERVER2_USER)@$env(SERVER2_HOST)\r"
         expect "*assword*"
 
         send "$env(SERVER2_PASS)\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "echo 'Connected to Server2' && hostname\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "alias\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "$env(REPLAY_OPTION)\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "source env.sh\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "cd /data/tier0/ReplayPipeline\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "rm -f ReplayOfflineConfiguration.py\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "wget '$env(WGET_URL)'\r"
         expect -re {.*\$\s*} { }
@@ -134,68 +134,68 @@ jobs:
         expect -re {.*\$\s*} { }
 
         send "ll\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "condor_rm -all\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "stop_agent\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         if { [string equal $env(PATCH_OPTION) "Patch"] } {
             send "echo 'Applying patches...'\r"
-            expect "$ "
+            expect -re {.*\$\s*} { }
             
             # Split the patch numbers and apply each one
             send "IFS=',' read -ra PATCHES <<< '$env(PATCH_URL)'\r"
-            expect "$ "
+            expect -re {.*\$\s*} { }
             
             send "for patch_num in \"\${PATCHES\[@\]\}\"; do\r"
-            expect "$ "
+            expect -re {.*\$\s*} { }
             
             send "  patch_num=\$(echo \$patch_num | tr -d ' ')\r"
-            expect "$ "
+            expect -re {.*\$\s*} { }
             
             send "  echo \"Applying patch PR #\$patch_num\"\r"
-            expect "$ "
+            expect -re {.*\$\s*} { }
             
             send "  curl https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\\${patch_num}.patch | patch -f -d \$WMA_DEPLOY_DIR/lib/python$env(PYTHON_VERSION)/site-packages/ -p 3\r"
-            expect "$ "
+            expect -re {.*\$\s*} { }
             
             send "  echo \"Patch \$patch_num downloaded\"\r"
-            expect "$ "
+            expect -re {.*\$\s*} { }
             
             send "done\r"
-            expect "$ "
+            expect -re {.*\$\s*} { }
             
         } else {
             send "echo 'No patch requested, skipping...'\r"
-            expect "$ "
+            expect -re {.*\$\s*} { }
         }
 
         send "rm -f /data/tier0/admin/ReplayOfflineConfiguration.py\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "SRC_FILE=/data/tier0/ReplayPipeline/ReplayOfflineConfiguration.py\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "DEST_FILE=/data/tier0/admin/ReplayOfflineConfiguration.py\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "cp \$SRC_FILE \$DEST_FILE\r"
         expect {
-            "$ " { }
+            -re {.*\$\s*} { } 
             timeout { puts "Timeout during file copy"; exit 1 }
         }
 
         send "export WMAGENT_TAG_VAR='$env(WMCORE_VERSION)'\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "export TIER0_VERSION_VAR='$env(T0_VERSION)'\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "export PYTHON_VERSION_VAR='$env(PYTHON_VERSION)'\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         send "source /data/tier0/ReplayPipeline/00_pypi_deploy_replay.sh\r"
         expect {
@@ -210,6 +210,6 @@ jobs:
         }
 
         send "start_agent\r"
-        expect "$ "
+        expect -re {.*\$\s*} { }
 
         EOF
