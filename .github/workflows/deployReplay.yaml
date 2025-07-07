@@ -93,8 +93,6 @@ jobs:
         send "echo 'Connected to Server2' && hostname\r"
         expect -re {.*\$\s*} { }
 
-        send "alias\r"
-        expect -re {.*\$\s*} { }
 
         send "$env(REPLAY_OPTION)\r"
         expect -re {.*\$\s*} { }
@@ -115,9 +113,6 @@ jobs:
         expect -re {.*\$\s*} { }
 
         send "if \[ ! -z \"\$CONFIG_FILE\" \] && \[ \"\$CONFIG_FILE\" != \"ReplayOfflineConfiguration.py\" \]; then echo \"Renaming \$CONFIG_FILE to ReplayOfflineConfiguration.py\"; mv \"\$CONFIG_FILE\" \"ReplayOfflineConfiguration.py\"; else echo 'Configuration file already named correctly or not found'; fi\r"
-        expect -re {.*\$\s*} { }
-
-        send "ll\r"
         expect -re {.*\$\s*} { }
 
         send "condor_rm -all\r"
@@ -168,6 +163,9 @@ jobs:
         expect -re {.*\$\s*} { }
 
         send "echo 'Verifying agent status...'\r"
+        expect -re {.*\$\s*} { }
+
+        send "timeout 300 less +F $install/Tier0Feeder/ComponentLog 2>/dev/null || echo 'Log monitoring completed'\r"
         expect -re {.*\$\s*} { }
 
         send "ps aux | grep -E '(wmcore|wmagent)' | grep -v grep || echo 'No WMAgent processes found'\r"
