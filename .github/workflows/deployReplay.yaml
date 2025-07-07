@@ -8,7 +8,16 @@ on:
       message1:               
         description: 'URL to download with wget'
         required: true         
-        default: 'https://raw.githubusercontent.com/dmwm/T0/refs/heads/master/etc/ReplayOfflineConfiguration.py'
+        default: 'https://raw.githubusercontent.com/Viphava280444/Tier-0/6c527ebb930cf7f306acf7e0bf83d5da869438b7/etc/ReplayOfflineConfiguration.py'
+
+      Replay:
+        description: 'Choose the Replay'
+        required: true
+        type: choice
+        options:
+        - 'vocms047'
+        - 'vocms0500'
+        default: 'vocms047'
 
       message2:               
         description: 'WMCORE Version'
@@ -39,14 +48,7 @@ on:
         required: false        
         default: '5081'
 
-      Replay:
-        description: 'Choose the Replay'
-        required: true
-        type: choice
-        options:
-        - 'vocms047'
-        - 'vocms0500'
-        default: 'vocms047'
+
       
 jobs:
   deploy-the-replay:
@@ -165,7 +167,8 @@ jobs:
         send "echo 'Verifying agent status...'\r"
         expect -re {.*\$\s*} { }
 
-        send "timeout 300 less +F $install/Tier0Feeder/ComponentLog 2>/dev/null || echo 'Log monitoring completed'\r"
+
+        send "timeout 300 less +F $install/Tier0Feeder/ComponentLog\r"
         expect -re {.*\$\s*} { }
 
         send "ps aux | grep -E '(wmcore|wmagent)' | grep -v grep || echo 'No WMAgent processes found'\r"
