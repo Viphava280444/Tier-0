@@ -193,4 +193,10 @@ jobs:
         send "start_agent\r"
         expect -re {.*\$\s*} { }
 
+        send "echo 'Verifying agent status...'\r"
+        expect -re {.*\$\s*} { }
+
+        send "ps aux | grep -E '(wmcore|wmagent)' | grep -v grep || echo 'No WMAgent processes found'\r"
+        expect -re {.*\$\s*} { }
+
         EOF
