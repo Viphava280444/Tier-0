@@ -115,13 +115,13 @@ jobs:
         send "CONFIG_FILE=\$(ls *ReplayOfflineConfiguration.py 2>/dev/null | head -1)\r"
         expect "$ "
         
-        send "if [ ! -z \"\\$CONFIG_FILE\" ] && [ \"\\$CONFIG_FILE\" != \"ReplayOfflineConfiguration.py\" ]; then\r"
+        send "if [ ! -z \"\$CONFIG_FILE\" ] && [ \"\$CONFIG_FILE\" != \"ReplayOfflineConfiguration.py\" ]; then\r"
         expect "$ "
         
-        send "echo \"Renaming \\$CONFIG_FILE to ReplayOfflineConfiguration.py\"\r"
+        send "echo \"Renaming \$CONFIG_FILE to ReplayOfflineConfiguration.py\"\r"
         expect "$ "
         
-        send "mv \"\\$CONFIG_FILE\" \"ReplayOfflineConfiguration.py\"\r"
+        send "mv \"\$CONFIG_FILE\" \"ReplayOfflineConfiguration.py\"\r"
         expect "$ "
         
         send "else\r"
@@ -153,16 +153,16 @@ jobs:
             send "for patch_num in \"\${PATCHES\[@\]\}\"; do\r"
             expect "$ "
             
-            send "  patch_num=\\$(echo \\$patch_num | tr -d ' ')\r"
+            send "  patch_num=\$(echo \$patch_num | tr -d ' ')\r"
             expect "$ "
             
-            send "  echo \"Applying patch PR #\\$patch_num\"\r"
+            send "  echo \"Applying patch PR #\$patch_num\"\r"
             expect "$ "
             
             send "  curl https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\\${patch_num}.patch | patch -f -d \$WMA_DEPLOY_DIR/lib/python$env(PYTHON_VERSION)/site-packages/ -p 3\r"
             expect "$ "
             
-            send "  echo \"Patch \\$patch_num downloaded\"\r"
+            send "  echo \"Patch \$patch_num downloaded\"\r"
             expect "$ "
             
             send "done\r"
