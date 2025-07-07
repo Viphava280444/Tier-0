@@ -112,7 +112,7 @@ jobs:
         send "wget '$env(WGET_URL)'\r"
         expect "$ "
 
-        send "CONFIG_FILE=\\$(ls *ReplayOfflineConfiguration.py 2>/dev/null | head -1)\r"
+        send "CONFIG_FILE=\$(ls *ReplayOfflineConfiguration.py 2>/dev/null | head -1)\r"
         expect "$ "
         
         send "if [ ! -z \"\\$CONFIG_FILE\" ] && [ \"\\$CONFIG_FILE\" != \"ReplayOfflineConfiguration.py\" ]; then\r"
