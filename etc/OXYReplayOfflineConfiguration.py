@@ -59,7 +59,7 @@ setInjectRuns(tier0Config, [393952]) # 386925: 2024 Collisions, 390094: 2025 Cos
 
 # Use this in order to limit the number of lumisections to process
 #setInjectLimit(tier0Config, 10)
-setInjectLimit(tier0Config, [50, 60])
+setInjectLimit(tier0Config, [50, 80])
 # Settings up sites
 processingSite = "T2_CH_CERN"
 storageSite = "T0_CH_CERN_Disk"
