@@ -59,7 +59,7 @@ setInjectRuns(tier0Config, [393952]) # 386925: 2024 Collisions, 390094: 2025 Cos
 
 # Use this in order to limit the number of lumisections to process
 #setInjectLimit(tier0Config, 10)
-setInjectLimit(tier0Config, [50, 80])
+setInjectLimit(tier0Config, [50, 60])
 # Settings up sites
 processingSite = "T2_CH_CERN"
 storageSite = "T0_CH_CERN_Disk"
@@ -221,7 +221,7 @@ addRepackConfig(tier0Config, "Default",
                 maxOverSize=8 * 1024 * 1024 * 1024,
                 maxInputEvents=3 * 1000 * 1000,
                 maxInputFiles=1000,
-                maxLatency=2 * 3600,
+                maxLatency=5 * 60,
                 blockCloseDelay=1200,
                 maxMemory=2000,
                 versionOverride=repackVersionOverride)
