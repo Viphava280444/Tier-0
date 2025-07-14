@@ -77,20 +77,20 @@ jobs:
 
         set timeout 1800
 
-        spawn ssh -o StrictHostKeyChecking=no $env(SERVER1_USER)@$env(SERVER1_HOST)
-        expect "*assword*"
+        # spawn ssh -o StrictHostKeyChecking=no $env(SERVER1_USER)@$env(SERVER1_HOST)
+        # expect "*assword*"
 
-        send "$env(SERVER1_PASS)\r"
-        expect -re {.*\$\s*} { }
+        # send "$env(SERVER1_PASS)\r"
+        # expect -re {.*\$\s*} { }
 
-        send "ssh -o StrictHostKeyChecking=no $env(SERVER2_USER)@$env(SERVER2_HOST)\r"
-        expect "*assword*"
+        # send "ssh -o StrictHostKeyChecking=no $env(SERVER2_USER)@$env(SERVER2_HOST)\r"
+        # expect "*assword*"
 
-        send "$env(SERVER2_PASS)\r"
-        expect -re {.*\$\s*} { }
+        # send "$env(SERVER2_PASS)\r"
+        # expect -re {.*\$\s*} { }
 
-        send "echo 'Connected to Server2' && hostname\r"
-        expect -re {.*\$\s*} { }
+        # send "echo 'Connected to Server2' && hostname\r"
+        # expect -re {.*\$\s*} { }
 
 
         send "$env(REPLAY_OPTION)\r"
