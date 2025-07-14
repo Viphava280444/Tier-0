@@ -93,7 +93,7 @@ jobs:
         # expect -re {.*\$\s*} { }
 
 
-        spawn "ssh cmst0@vocms0500.cern.ch\r"
+        spawn ssh cmst0@vocms0500.cern.ch
         expect -re {.*\$\s*} { }
 
         send "source env.sh\r"
