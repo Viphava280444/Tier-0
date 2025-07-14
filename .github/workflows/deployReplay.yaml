@@ -89,8 +89,8 @@ jobs:
         # send "$env(SERVER2_PASS)\r"
         # expect -re {.*\$\s*} { }
 
-        # send "echo 'Connected to Server2' && hostname\r"
-        # expect -re {.*\$\s*} { }
+        send "echo 'Connected to Server2' && hostname\r"
+        expect -re {.*\$\s*} { }
 
 
         send "$env(REPLAY_OPTION)\r"
