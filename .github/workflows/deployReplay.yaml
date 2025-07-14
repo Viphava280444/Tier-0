@@ -89,7 +89,7 @@ jobs:
         # send "$env(SERVER2_PASS)\r"
         # expect -re {.*\$\s*} { }
 
-        send "echo 'Connected to Server2' && hostname\r"
+        spawn "echo 'Connected to Server2' && hostname\r"
         expect -re {.*\$\s*} { }
 
 
