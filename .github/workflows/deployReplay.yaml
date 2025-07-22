@@ -101,6 +101,9 @@ jobs:
         spawn ssh  -o StrictHostKeyChecking=no cmst0@$env(REPLAY_OPTION).cern.ch
         expect -re {.*\$\s*} { }
 
+         send "ll\r"
+        expect -re {.*\$\s*} { }
+
         send "source env.sh\r"
         expect -re {.*\$\s*} { }
 
