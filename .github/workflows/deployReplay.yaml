@@ -54,6 +54,9 @@ jobs:
     runs-on: cmst0
     
     steps:
+
+    - name: Install tools
+      run: kinit cmst0@CERN.CH -k -t  /home/cmsbld/cmst0.keytab
     
     - name: Access to virtual machine and run the script
       env:
@@ -94,8 +97,6 @@ jobs:
         # spawn "echo 'Connected to Server2'"
         # expect -re {.*\$\s*} { }
 
-        send "kinit cmst0@CERN.CH -k -t  /home/cmsbld/cmst0.keytab\r"
-        expect -re {.*\$\s*} { }
 
         spawn ssh  -o StrictHostKeyChecking=no cmst0@$env(REPLAY_OPTION).cern.ch
         expect -re {.*\$\s*} { }
