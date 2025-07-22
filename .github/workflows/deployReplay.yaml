@@ -77,6 +77,8 @@ jobs:
 
         set timeout 1800
 
+
+
         # spawn ssh -o StrictHostKeyChecking=no $env(SERVER1_USER)@$env(SERVER1_HOST)
         # expect "*assword*"
 
@@ -92,6 +94,8 @@ jobs:
         # spawn "echo 'Connected to Server2'"
         # expect -re {.*\$\s*} { }
 
+        send "kinit cmst0@CERN.CH -k -t  /home/cmsbld/cmst0.keytab\r"
+        expect -re {.*\$\s*} { }
 
         spawn ssh  -o StrictHostKeyChecking=no cmst0@$env(REPLAY_OPTION).cern.ch
         expect -re {.*\$\s*} { }
