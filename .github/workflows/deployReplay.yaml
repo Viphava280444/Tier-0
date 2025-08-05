@@ -73,7 +73,7 @@ jobs:
         PYTHON_VERSION : ${{ github.event.inputs.message4 }}
 
       run: |
-        kinit cmst0@CERN.CH -k -t /home/cmsbld/cmst0.keytab
+       
         # Method 1: Use expect to handle SSH password prompts
         expect << 'EOF'
 
@@ -97,7 +97,7 @@ jobs:
         # expect -re {.*\$\s*} { }
 
         
-
+        spawn kinit cmst0@CERN.CH -k -t /home/cmsbld/cmst0.keytab
         spawn ssh  -o StrictHostKeyChecking=no cmst0@$env(REPLAY_OPTION).cern.ch
         expect -re {.*\$\s*} { }
 
