@@ -74,12 +74,7 @@ jobs:
 
       run: |
        
-        # Method 1: Use expect to handle SSH password prompts
         expect << 'EOF'
-
-        set timeout 1800
-
-
 
         # spawn ssh -o StrictHostKeyChecking=no $env(SERVER1_USER)@$env(SERVER1_HOST)
         # expect "*assword*"
@@ -96,12 +91,12 @@ jobs:
         # spawn "echo 'Connected to Server2'"
         # expect -re {.*\$\s*} { }
 
-        
+        set timeout 1800
         spawn kinit cmst0@CERN.CH -k -t /home/cmsbld/cmst0.keytab
         spawn ssh  -o StrictHostKeyChecking=no -K cmst0@$env(REPLAY_OPTION).cern.ch
         expect -re {.*\$\s*} { }
 
-         send "ll\r"
+        send "ll\r"
         expect -re {.*\$\s*} { }
 
         send "source env.sh\r"
@@ -161,8 +156,9 @@ jobs:
         send "echo 'About to execute patch logic...'\r"
         expect -re {.*\$\s*} { }
 
+        set prompt ":|#|\\\$"
         send "if \[ \"$env(PATCH_OPTION)\" = \"Patch\" \]; then echo 'Applying patches...'; IFS=',' read -ra PATCHES <<< '$env(PATCH_URL)'; for patch_num in \"\${PATCHES\[@\]\}\"; do patch_num=\$(echo \$patch_num | tr -d ' '); echo \"Applying patch PR #\$patch_num\"; curl https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\${patch_num}.patch | patch -f -d /data/tier0/WMAgent.venv3/lib/python$env(PYTHON_VERSION)/site-packages/ -p 3; echo \"Patch \$patch_num applied\"; done; else echo 'No patch requested, skipping...'; fi\r"
-        expect -re {.*\$\s*} { }
+        interact -o -nobuffer -re $prompt return
 
         send "echo 'Patch logic completed, exit code: '\$?\r"
         expect -re {.*\$\s*} { }
