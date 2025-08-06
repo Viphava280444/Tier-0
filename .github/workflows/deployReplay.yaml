@@ -96,6 +96,18 @@ jobs:
         spawn ssh  -o StrictHostKeyChecking=no -K cmst0@$env(REPLAY_OPTION).cern.ch
         expect -re {.*\$\s*} { }
 
+        send "export PS1='$ '\r"
+        expect -re {\$\s*} { }
+
+        send "unset PROMPT_COMMAND\r"
+        expect -re {\$\s*} { }
+
+        send "stty -echo\r"
+        expect -re {\$\s*} { }
+
+        send "echo 'Terminal environment cleaned up'\r"
+        expect -re {\$\s*} { }
+
         send "ll\r"
         expect -re {.*\$\s*} { }
 
