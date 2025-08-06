@@ -173,7 +173,7 @@ jobs:
         send "cp /data/tier0/ReplayPipeline/checkProxy.py /data/tier0/WMAgent.venv3/deploy/checkProxy.py\r"
         expect -re {.*\$\s*} { }
 
-        send "start_agent\r"
+        send "source /data/tier0/00_pypi_start_agent.sh\r"
         expect -re {.*\$\s*} { }
 
         send "echo 'Agent started, now monitoring logs...'\r"
