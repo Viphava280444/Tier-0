@@ -172,18 +172,8 @@ jobs:
         send "start_agent\r"
         expect -re {.*\$\s*} { }
 
-        send "echo 'Verifying agent status...'\r"
+        send "timeout 600 tail -f /data/tier0/WMAgent.venv3/srv/wmagent/$env(WMCORE_VERSION)/install/Tier0Feeder/ComponentLog\r"
         expect -re {.*\$\s*} { }
 
-
-
-        send "timeout 600 tail -f $install/Tier0Feeder/ComponentLog\r"
-        expect -re {.*\$\s*} { }
-
-        send "ps aux | grep -E '(wmcore|wmagent)' | grep -v grep || echo 'No WMAgent processes found'\r"
-        expect -re {.*\$\s*} { }
-
-        send "echo 'Deployment workflow completed successfully'\r"
-        expect -re {.*\$\s*} { }
 
         EOF
