@@ -62,15 +62,19 @@ jobs:
       run: |
         echo "=== Step 1: Cleaning environment on ${REPLAY_OPTION} ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch 
-      
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << 'STEP1'
+
+        
+        echo "Terminal environment cleaned up"
+        
         source env.sh
         
         echo "Stopping existing processes..."
-        condor_rm -all 
-        stop_agent 
+        condor_rm -all 2>/dev/null || true
+        stop_agent 2>/dev/null || true
         
         echo "Environment preparation completed"
+        STEP1
 
     - name: Step 2 - Download and setup configuration
       env:
@@ -79,7 +83,7 @@ jobs:
       run: |
         echo "=== Step 2: Downloading configuration ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch 
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP2
         source env.sh
         cd /data/tier0/ReplayPipeline
         
@@ -103,7 +107,7 @@ jobs:
         cp /data/tier0/ReplayPipeline/ReplayOfflineConfiguration.py /data/tier0/admin/ReplayOfflineConfiguration.py
         
         echo "Configuration setup completed"
-    
+        STEP2
 
     - name: Step 3 - Deploy WMAgent
       env:
@@ -114,7 +118,7 @@ jobs:
       run: |
         echo "=== Step 3: Deploying WMAgent ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch 
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP3
         source env.sh
         cd /data/tier0/ReplayPipeline
         
@@ -145,7 +149,7 @@ jobs:
         if [ "${PATCH_OPTION}" = "Patch" ]; then
           echo "Patches requested, applying..."
           
-          ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch 
+          ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP4
           source env.sh
           
           echo "About to execute patch logic..."
@@ -179,7 +183,7 @@ jobs:
       run: |
         echo "=== Step 5: Starting agent ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch 
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP5
         source env.sh
         
         echo "Starting replace the new configuration file...."
@@ -204,7 +208,7 @@ jobs:
       run: |
         echo "=== Step 6: Monitoring logs ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch 
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP6
         source env.sh
         
         echo "Agent started, now monitoring logs..."
@@ -218,7 +222,7 @@ jobs:
         manage status || true
         
         echo "Pipeline execution finished successfully"
-        
+        STEP6
 
     - name: Summary
       env:
