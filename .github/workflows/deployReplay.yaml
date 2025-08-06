@@ -157,8 +157,7 @@ jobs:
         expect "*Are you sure you wish to continue? (Y/n)*"
 
         send "Y\r"
-        expect -re {.*\$\s*} { }
-
+        expect -re {.*\$[\s\r\n]*} { }
 
         send "if \[ \"$env(PATCH_OPTION)\" = \"Patch\" \]; then echo 'Applying patches...'; IFS=',' read -ra PATCHES <<< '$env(PATCH_URL)'; for patch_num in \"\${PATCHES\[@\]\}\"; do patch_num=\$(echo \$patch_num | tr -d ' '); echo \"Applying patch PR #\$patch_num\"; curl https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\${patch_num}.patch | patch -f -d /data/tier0/WMAgent.venv3/lib/python$env(PYTHON_VERSION)/site-packages/ -p 3; echo \"Patch \$patch_num applied\"; done; else echo 'No patch requested, skipping...'; fi\r"
         expect -re {.*\$\s*} { }
