@@ -164,6 +164,9 @@ jobs:
         send "if \[ \"$env(PATCH_OPTION)\" = \"Patch\" \]; then echo 'Applying patches...'; IFS=',' read -ra PATCHES <<< '$env(PATCH_URL)'; for patch_num in \"\${PATCHES\[@\]\}\"; do patch_num=\$(echo \$patch_num | tr -d ' '); echo \"Applying patch PR #\$patch_num\"; curl https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\${patch_num}.patch | patch -f -d /data/tier0/WMAgent.venv3/lib/python$env(PYTHON_VERSION)/site-packages/ -p 3; echo \"Patch \$patch_num applied\"; done; else echo 'No patch requested, skipping...'; fi\r"
         expect -re {.*\$\s*} { }
 
+        send "echo 'Starting replace the new configuration file....'\r"
+        expect -re {.*\$\s*} { }
+
         send "cp /data/tier0/ReplayPipeline/checkProxy.py /data/tier0/WMAgent.venv3/deploy/checkProxy.py\r"
         expect -re {.*\$\s*} { }
 
