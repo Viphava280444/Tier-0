@@ -1,8 +1,6 @@
 name: Pipeline for deploy the replay
 
 on:
-  # push:
-  #   branches: [ "Pipeline" ]
   workflow_dispatch:          
     inputs:                  
       message1:               
@@ -48,187 +46,204 @@ on:
         required: false        
         default: '3.12'
 
-    
 jobs:
   deploy-the-replay:
     runs-on: cmst0
     
     steps:
-
-    
-    - name: Access to virtual machine and run the script
-      env:
-        SERVER1_HOST: ${{ secrets.SERVER1_HOST }}
-        SERVER1_USER: ${{ secrets.SERVER1_USER }}
-        SERVER1_PASS: ${{ secrets.SERVER1_PASS }}
-        SERVER2_HOST: ${{ secrets.SERVER2_HOST }}
-        SERVER2_USER: ${{ secrets.SERVER2_USER }}
-        SERVER2_PASS: ${{ secrets.SERVER2_PASS }}
-        WGET_URL: ${{ github.event.inputs.message1 }} 
-        REPLAY_OPTION: ${{ github.event.inputs.Replay }}  
-        PATCH_OPTION: ${{ github.event.inputs.Patch }}        
-        PATCH_URL: ${{ github.event.inputs.message5 }}
-        WMCORE_VERSION : ${{ github.event.inputs.message2 }}
-        T0_VERSION : ${{ github.event.inputs.message3 }}
-        PYTHON_VERSION : ${{ github.event.inputs.message4 }}
-
+    - name: Authenticate with Kerberos
       run: |
-       
-        expect << 'EOF'
+        kinit cmst0@CERN.CH -k -t /home/cmsbld/cmst0.keytab
+        echo "Kerberos authentication successful"
 
-        # spawn ssh -o StrictHostKeyChecking=no $env(SERVER1_USER)@$env(SERVER1_HOST)
-        # expect "*assword*"
-
-        # send "$env(SERVER1_PASS)\r"
-        # expect -re {.*\$\s*} { }
-
-        # send "ssh -o StrictHostKeyChecking=no $env(SERVER2_USER)@$env(SERVER2_HOST)\r"
-        # expect "*assword*"
-
-        # send "$env(SERVER2_PASS)\r"
-        # expect -re {.*\$\s*} { }
-
-        # spawn "echo 'Connected to Server2'"
-        # expect -re {.*\$\s*} { }
-
-        set timeout 1800
-        spawn kinit cmst0@CERN.CH -k -t /home/cmsbld/cmst0.keytab
-        spawn ssh  -o StrictHostKeyChecking=no -K cmst0@$env(REPLAY_OPTION).cern.ch
+    - name: Step 1 - Clean and prepare environment
+      env:
+        REPLAY_OPTION: ${{ github.event.inputs.Replay }}
+      run: |
+        echo "=== Step 1: Cleaning environment on ${REPLAY_OPTION} ==="
         
-        # Wait for initial prompt - handle bracketed paste sequences
-        expect {
-            -re {\[\\?2004[hl]} { exp_continue }
-            -re {.*\$\s*} { }
-        }
-
-        # Disable bracketed paste mode immediately after connection
-        send "printf '\\033\[?2004l'\r"
-        expect {
-            -re {\[\\?2004[hl]} { exp_continue }
-            -re {\$\s*} { }
-        }
-
-        send "export PS1='$ '\r"
-        expect -re {\$\s*} { }
-
-        send "unset PROMPT_COMMAND\r"
-        expect -re {\$\s*} { }
-
-        send "stty -echo\r"
-        expect -re {\$\s*} { }
-
-        send "echo 'Terminal environment cleaned up'\r"
-        expect -re {\$\s*} { }
-
-        send "ll\r"
-        expect -re {.*\$\s*} { }
-
-        send "source env.sh\r"
-        expect -re {.*\$\s*} { }
-
-        send "cd /data/tier0/ReplayPipeline\r"
-        expect -re {.*\$\s*} { }
-
-        send "rm -f ReplayOfflineConfiguration.py\r"
-        expect -re {.*\$\s*} { }
-
-        send "wget '$env(WGET_URL)'\r"
-        expect -re {.*\$\s*} { }
-
-        send "CONFIG_FILE=\$(ls *ReplayOfflineConfiguration.py 2>/dev/null | head -1)\r"
-        expect -re {.*\$\s*} { }
-
-        send "if \[ ! -z \"\$CONFIG_FILE\" \] && \[ \"\$CONFIG_FILE\" != \"ReplayOfflineConfiguration.py\" \]; then echo \"Renaming \$CONFIG_FILE to ReplayOfflineConfiguration.py\"; mv \"\$CONFIG_FILE\" \"ReplayOfflineConfiguration.py\"; else echo 'Configuration file already named correctly or not found'; fi\r"
-        expect -re {.*\$\s*} { }
-
-        send "condor_rm -all\r"
-        expect -re {.*\$\s*} { }
-
-        send "stop_agent\r"
-        expect -re {.*\$\s*} { }
-
-        send "rm -f /data/tier0/admin/ReplayOfflineConfiguration.py\r"
-        expect -re {.*\$\s*} { }
-
-        send "SRC_FILE=/data/tier0/ReplayPipeline/ReplayOfflineConfiguration.py\r"
-        expect -re {.*\$\s*} { }
-
-        send "DEST_FILE=/data/tier0/admin/ReplayOfflineConfiguration.py\r"
-        expect -re {.*\$\s*} { }
-
-        send "cp \$SRC_FILE \$DEST_FILE\r"
-        expect {
-            -re {.*\$\s*} { } 
-            timeout { puts "Timeout during file copy"; exit 1 }
-        }
-
-        send "export WMAGENT_TAG_VAR='$env(WMCORE_VERSION)'\r"
-        expect -re {.*\$\s*} { }
-
-        send "export TIER0_VERSION_VAR='$env(T0_VERSION)'\r"
-        expect -re {.*\$\s*} { }
-
-        send "export PYTHON_VERSION_VAR='$env(PYTHON_VERSION)'\r"
-        expect -re {.*\$\s*} { }
-
-        send "source /data/tier0/ReplayPipeline/00_pypi_deploy_replay.sh\r"
-        expect "*Are you sure you wish to continue? (Y/n)*"
-
-        send "Y\r"
-        expect -re {.*\$\s*} { }
-
-        send "echo 'About to execute patch logic...'\r"
-        expect -re {.*\$\s*} { }
-
-        send "if \[ \"$env(PATCH_OPTION)\" = \"Patch\" \]; then echo 'Applying patches...'; IFS=',' read -ra PATCHES <<< '$env(PATCH_URL)'; for patch_num in \"\${PATCHES\[@\]\}\"; do patch_num=\$(echo \$patch_num | tr -d ' '); echo \"Applying patch PR #\$patch_num\"; curl https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\${patch_num}.patch | patch -f -d /data/tier0/WMAgent.venv3/lib/python$env(PYTHON_VERSION)/site-packages/ -p 3; echo \"Patch \$patch_num applied\"; done; else echo 'No patch requested, skipping...'; fi\r"
-        expect -re {.*\$\s*} { }
-
-        send "echo 'Patch logic completed, exit code: '\$?\r"
-        expect -re {.*\$\s*} { }
-
-        send "echo 'Starting replace the new configuration file....'\r"
-        expect -re {.*\$\s*} { }
-
-        send "cp /data/tier0/ReplayPipeline/checkProxy.py /data/tier0/WMAgent.venv3/deploy/checkProxy.py\r"
-        expect -re {.*\$\s*} { }
-
-        send "source /data/tier0/00_pypi_start_agent.sh\r"
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << 'STEP1'
+        # Disable bracketed paste mode
+        printf '\033[?2004l'
+        export PS1='$ '
+        unset PROMPT_COMMAND
+        stty -echo 2>/dev/null || true
         
-        # Give more time for agent to start and handle multiple output lines
-        set timeout 120
-        expect {
-            -re {\[\\?2004[hl]} { exp_continue }
-            -re {Component .* started} { exp_continue }
-            -re {.*\$\s*} { }
-            timeout {
-                send "\r"
-                expect -re {.*\$\s*} { }
-            }
-        }
+        echo "Terminal environment cleaned up"
+        
+        # Source environment
+        source env.sh
+        
+        # Stop any existing processes
+        echo "Stopping existing processes..."
+        condor_rm -all 2>/dev/null || true
+        stop_agent 2>/dev/null || true
+        
+        echo "Environment preparation completed"
+        STEP1
 
-        send "echo 'Agent started, now monitoring logs...'\r"
-        expect {
-            -re {\[\\?2004[hl]} { exp_continue }
-            -re {.*\$\s*} { }
-        }
+    - name: Step 2 - Download and setup configuration
+      env:
+        REPLAY_OPTION: ${{ github.event.inputs.Replay }}
+        WGET_URL: ${{ github.event.inputs.message1 }}
+      run: |
+        echo "=== Step 2: Downloading configuration ==="
+        
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP2
+        source env.sh
+        cd /data/tier0/ReplayPipeline
+        
+        # List current directory
+        echo "Current directory contents:"
+        ll
+        
+        # Download configuration
+        echo "Downloading configuration from: ${WGET_URL}"
+        rm -f ReplayOfflineConfiguration.py
+        wget "${WGET_URL}"
+        
+        # Rename if necessary
+        CONFIG_FILE=\$(ls *ReplayOfflineConfiguration.py 2>/dev/null | head -1)
+        if [ ! -z "\$CONFIG_FILE" ] && [ "\$CONFIG_FILE" != "ReplayOfflineConfiguration.py" ]; then
+            echo "Renaming \$CONFIG_FILE to ReplayOfflineConfiguration.py"
+            mv "\$CONFIG_FILE" "ReplayOfflineConfiguration.py"
+        else
+            echo "Configuration file already named correctly or not found"
+        fi
+        
+        # Copy to admin directory
+        echo "Copying configuration to admin directory..."
+        rm -f /data/tier0/admin/ReplayOfflineConfiguration.py
+        cp /data/tier0/ReplayPipeline/ReplayOfflineConfiguration.py /data/tier0/admin/ReplayOfflineConfiguration.py
+        
+        echo "Configuration setup completed"
+        STEP2
 
-        # Changed from 'timeout 600 tail -f' to run in background and wait
-        send "timeout 600 tail -f /data/tier0/WMAgent.venv3/srv/wmagent/$env(WMCORE_VERSION)/install/Tier0Feeder/ComponentLog &\r"
-        expect -re {.*\$\s*} { }
+    - name: Step 3 - Deploy WMAgent
+      env:
+        REPLAY_OPTION: ${{ github.event.inputs.Replay }}
+        WMCORE_VERSION: ${{ github.event.inputs.message2 }}
+        T0_VERSION: ${{ github.event.inputs.message3 }}
+        PYTHON_VERSION: ${{ github.event.inputs.message4 }}
+      run: |
+        echo "=== Step 3: Deploying WMAgent ==="
         
-        # Let it run for 30 seconds then stop it
-        send "sleep 30\r"
-        set timeout 35
-        expect -re {.*\$\s*} { }
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP3
+        source env.sh
+        cd /data/tier0/ReplayPipeline
         
-        # Kill the background tail process
-        send "pkill -f 'tail -f.*ComponentLog' 2>/dev/null || true\r"
-        expect -re {.*\$\s*} { }
+        # Set environment variables
+        export WMAGENT_TAG_VAR="${WMCORE_VERSION}"
+        export TIER0_VERSION_VAR="${T0_VERSION}"
+        export PYTHON_VERSION_VAR="${PYTHON_VERSION}"
         
-        send "echo 'Log monitoring completed'\r"
-        expect -re {.*\$\s*} { }
+        echo "Environment variables set:"
+        echo "  WMAGENT_TAG_VAR=${WMCORE_VERSION}"
+        echo "  TIER0_VERSION_VAR=${T0_VERSION}"
+        echo "  PYTHON_VERSION_VAR=${PYTHON_VERSION}"
         
-        send "echo 'Pipeline execution finished successfully'\r"
-        expect -re {.*\$\s*} { }
+        # Deploy with automatic Y response
+        echo "Starting deployment..."
+        echo "Y" | source /data/tier0/ReplayPipeline/00_pypi_deploy_replay.sh
+        
+        echo "Deployment completed"
+        STEP3
 
-        EOF
+    - name: Step 4 - Apply patches (if requested)
+      env:
+        REPLAY_OPTION: ${{ github.event.inputs.Replay }}
+        PATCH_OPTION: ${{ github.event.inputs.Patch }}
+        PATCH_URL: ${{ github.event.inputs.message5 }}
+        PYTHON_VERSION: ${{ github.event.inputs.message4 }}
+      run: |
+        echo "=== Step 4: Patch application ==="
+        
+        if [ "${PATCH_OPTION}" = "Patch" ]; then
+          echo "Patches requested, applying..."
+          
+          ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP4
+          source env.sh
+          
+          echo "About to execute patch logic..."
+          echo "Applying patches: ${PATCH_URL}"
+          
+          IFS=',' read -ra PATCHES <<< "${PATCH_URL}"
+          for patch_num in "\${PATCHES[@]}"; do
+              patch_num=\$(echo \$patch_num | tr -d ' ')
+              echo "Applying patch PR #\$patch_num"
+              
+              curl -L "https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\${patch_num}.patch" | \
+                  patch -f -d "/data/tier0/WMAgent.venv3/lib/python${PYTHON_VERSION}/site-packages/" -p 3
+              
+              if [ \$? -eq 0 ]; then
+                  echo "Patch \$patch_num applied successfully"
+              else
+                  echo "Warning: Patch \$patch_num may have failed"
+              fi
+          done
+          
+          echo "All patches processed"
+        STEP4
+        else
+          echo "No patches requested, skipping..."
+        fi
+
+    - name: Step 5 - Start agent and finalize
+      env:
+        REPLAY_OPTION: ${{ github.event.inputs.Replay }}
+        WMCORE_VERSION: ${{ github.event.inputs.message2 }}
+      run: |
+        echo "=== Step 5: Starting agent ==="
+        
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP5
+        source env.sh
+        
+        echo "Starting replace the new configuration file...."
+        cp /data/tier0/ReplayPipeline/checkProxy.py /data/tier0/WMAgent.venv3/deploy/checkProxy.py
+        
+        echo "Starting WMAgent..."
+        source /data/tier0/00_pypi_start_agent.sh
+        
+        echo "Agent started, waiting for stabilization..."
+        sleep 10
+        
+        echo "Checking agent status..."
+        manage status || true
+        
+        echo "Agent started successfully"
+        STEP5
+
+    - name: Step 6 - Monitor logs
+      env:
+        REPLAY_OPTION: ${{ github.event.inputs.Replay }}
+        WMCORE_VERSION: ${{ github.event.inputs.message2 }}
+      run: |
+        echo "=== Step 6: Monitoring logs ==="
+        
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP6
+        source env.sh
+        
+        echo "Agent started, now monitoring logs..."
+        
+        # Monitor logs for 30 seconds (instead of 600)
+        echo "Monitoring Tier0Feeder logs for 30 seconds..."
+        timeout 30 tail -f /data/tier0/WMAgent.venv3/srv/wmagent/${WMCORE_VERSION}/install/Tier0Feeder/ComponentLog 2>/dev/null || true
+        
+        echo "Log monitoring completed"
+        
+        # Final status check
+        echo "Final agent status:"
+        manage status || true
+        
+        echo "Pipeline execution finished successfully"
+        STEP6
+
+    - name: Summary
+      env:
+        REPLAY_OPTION: ${{ github.event.inputs.Replay }}
+      run: |
+        echo "========================================="
+        echo "Deployment Summary:"
+        echo "  Server: ${REPLAY_OPTION}"
+        echo "  Status: Completed"
+        echo "========================================="
