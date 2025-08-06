@@ -158,49 +158,13 @@ jobs:
         send "Y\r"
         expect -re {.*\$\s*} { }
 
-        send "echo 'Deployment completed, now proceeding with patches...'\r"
+        send "echo 'About to execute patch logic...'\r"
         expect -re {.*\$\s*} { }
 
-        # send "if \[ \"$env(PATCH_OPTION)\" = \"Patch\" \]; then echo 'Applying patches...'; IFS=',' read -ra PATCHES <<< '$env(PATCH_URL)'; for patch_num in \"\${PATCHES\[@\]\}\"; do patch_num=\$(echo \$patch_num | tr -d ' '); echo \"Applying patch PR #\$patch_num\"; curl https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\${patch_num}.patch | patch -f -d /data/tier0/WMAgent.venv3/lib/python$env(PYTHON_VERSION)/site-packages/ -p 3; echo \"Patch \$patch_num applied\"; done; else echo 'No patch requested, skipping...'; fi\r"
-        # expect -re {.*\$\s*} { }
-
-        send "echo 'Checking patch option: $env(PATCH_OPTION)'\r"
+        send "if \[ \"$env(PATCH_OPTION)\" = \"Patch\" \]; then echo 'Applying patches...'; IFS=',' read -ra PATCHES <<< '$env(PATCH_URL)'; for patch_num in \"\${PATCHES\[@\]\}\"; do patch_num=\$(echo \$patch_num | tr -d ' '); echo \"Applying patch PR #\$patch_num\"; curl https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\${patch_num}.patch | patch -f -d /data/tier0/WMAgent.venv3/lib/python$env(PYTHON_VERSION)/site-packages/ -p 3; echo \"Patch \$patch_num applied\"; done; else echo 'No patch requested, skipping...'; fi\r"
         expect -re {.*\$\s*} { }
 
-        send "if \[ \"$env(PATCH_OPTION)\" = \"Patch\" \]; then\r"
-        expect -re {.*>\s*} { }
-
-        send "echo 'Applying patches...'\r"
-        expect -re {.*>\s*} { }
-
-        send "IFS=',' read -ra PATCHES <<< '$env(PATCH_URL)'\r"
-        expect -re {.*>\s*} { }
-
-        send "for patch_num in \"\${PATCHES\[@\]\}\"; do\r"
-        expect -re {.*>\s*} { }
-
-        send "patch_num=\$(echo \$patch_num | tr -d ' ')\r"
-        expect -re {.*>\s*} { }
-
-        send "echo \"Applying patch PR #\$patch_num\"\r"
-        expect -re {.*>\s*} { }
-
-        send "curl https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\${patch_num}.patch | patch -f -d /data/tier0/WMAgent.venv3/lib/python$env(PYTHON_VERSION)/site-packages/ -p 3\r"
-        expect -re {.*>\s*} { }
-
-        send "echo \"Patch \$patch_num applied\"\r"
-        expect -re {.*>\s*} { }
-
-        send "done\r"
-        expect -re {.*>\s*} { }
-
-        send "else\r"
-        expect -re {.*>\s*} { }
-
-        send "echo 'No patch requested, skipping...'\r"
-        expect -re {.*>\s*} { }
-
-        send "fi\r"
+        send "echo 'Patch logic completed, exit code: '\$?\r"
         expect -re {.*\$\s*} { }
 
         send "echo 'Starting replace the new configuration file....'\r"
