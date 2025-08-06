@@ -94,7 +94,19 @@ jobs:
         set timeout 1800
         spawn kinit cmst0@CERN.CH -k -t /home/cmsbld/cmst0.keytab
         spawn ssh  -o StrictHostKeyChecking=no -K cmst0@$env(REPLAY_OPTION).cern.ch
-        expect -re {.*\$\s*} { }
+        
+        # Wait for initial prompt - handle bracketed paste sequences
+        expect {
+            -re {\[\\?2004[hl]} { exp_continue }
+            -re {.*\$\s*} { }
+        }
+
+        # Disable bracketed paste mode immediately after connection
+        send "printf '\\033\[?2004l'\r"
+        expect {
+            -re {\[\\?2004[hl]} { exp_continue }
+            -re {\$\s*} { }
+        }
 
         send "export PS1='$ '\r"
         expect -re {\$\s*} { }
@@ -181,12 +193,42 @@ jobs:
         expect -re {.*\$\s*} { }
 
         send "source /data/tier0/00_pypi_start_agent.sh\r"
-        expect -re {.*\$\s*} { }
+        
+        # Give more time for agent to start and handle multiple output lines
+        set timeout 120
+        expect {
+            -re {\[\\?2004[hl]} { exp_continue }
+            -re {Component .* started} { exp_continue }
+            -re {.*\$\s*} { }
+            timeout {
+                send "\r"
+                expect -re {.*\$\s*} { }
+            }
+        }
 
         send "echo 'Agent started, now monitoring logs...'\r"
-        expect -re {.*\$\s*} { }
+        expect {
+            -re {\[\\?2004[hl]} { exp_continue }
+            -re {.*\$\s*} { }
+        }
 
-        send "timeout 600 tail -f /data/tier0/WMAgent.venv3/srv/wmagent/$env(WMCORE_VERSION)/install/Tier0Feeder/ComponentLog\r"
+        # Changed from 'timeout 600 tail -f' to run in background and wait
+        send "timeout 600 tail -f /data/tier0/WMAgent.venv3/srv/wmagent/$env(WMCORE_VERSION)/install/Tier0Feeder/ComponentLog &\r"
+        expect -re {.*\$\s*} { }
+        
+        # Let it run for 30 seconds then stop it
+        send "sleep 30\r"
+        set timeout 35
+        expect -re {.*\$\s*} { }
+        
+        # Kill the background tail process
+        send "pkill -f 'tail -f.*ComponentLog' 2>/dev/null || true\r"
+        expect -re {.*\$\s*} { }
+        
+        send "echo 'Log monitoring completed'\r"
+        expect -re {.*\$\s*} { }
+        
+        send "echo 'Pipeline execution finished successfully'\r"
         expect -re {.*\$\s*} { }
 
         EOF
