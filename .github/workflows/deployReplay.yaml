@@ -62,25 +62,15 @@ jobs:
       run: |
         echo "=== Step 1: Cleaning environment on ${REPLAY_OPTION} ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << 'STEP1'
-        # Disable bracketed paste mode
-        printf '\033[?2004l'
-        export PS1='$ '
-        unset PROMPT_COMMAND
-        stty -echo 2>/dev/null || true
-        
-        echo "Terminal environment cleaned up"
-        
-        # Source environment
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch 
+      
         source env.sh
         
-        # Stop any existing processes
         echo "Stopping existing processes..."
-        condor_rm -all 2>/dev/null || true
-        stop_agent 2>/dev/null || true
+        condor_rm -all 
+        stop_agent 
         
         echo "Environment preparation completed"
-        STEP1
 
     - name: Step 2 - Download and setup configuration
       env:
@@ -89,20 +79,17 @@ jobs:
       run: |
         echo "=== Step 2: Downloading configuration ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP2
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch 
         source env.sh
         cd /data/tier0/ReplayPipeline
         
-        # List current directory
         echo "Current directory contents:"
         ll
         
-        # Download configuration
         echo "Downloading configuration from: ${WGET_URL}"
         rm -f ReplayOfflineConfiguration.py
         wget "${WGET_URL}"
         
-        # Rename if necessary
         CONFIG_FILE=\$(ls *ReplayOfflineConfiguration.py 2>/dev/null | head -1)
         if [ ! -z "\$CONFIG_FILE" ] && [ "\$CONFIG_FILE" != "ReplayOfflineConfiguration.py" ]; then
             echo "Renaming \$CONFIG_FILE to ReplayOfflineConfiguration.py"
@@ -111,13 +98,12 @@ jobs:
             echo "Configuration file already named correctly or not found"
         fi
         
-        # Copy to admin directory
         echo "Copying configuration to admin directory..."
         rm -f /data/tier0/admin/ReplayOfflineConfiguration.py
         cp /data/tier0/ReplayPipeline/ReplayOfflineConfiguration.py /data/tier0/admin/ReplayOfflineConfiguration.py
         
         echo "Configuration setup completed"
-        STEP2
+    
 
     - name: Step 3 - Deploy WMAgent
       env:
@@ -128,11 +114,10 @@ jobs:
       run: |
         echo "=== Step 3: Deploying WMAgent ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP3
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch 
         source env.sh
         cd /data/tier0/ReplayPipeline
         
-        # Set environment variables
         export WMAGENT_TAG_VAR="${WMCORE_VERSION}"
         export TIER0_VERSION_VAR="${T0_VERSION}"
         export PYTHON_VERSION_VAR="${PYTHON_VERSION}"
@@ -142,7 +127,6 @@ jobs:
         echo "  TIER0_VERSION_VAR=${T0_VERSION}"
         echo "  PYTHON_VERSION_VAR=${PYTHON_VERSION}"
         
-        # Deploy with automatic Y response
         echo "Starting deployment..."
         echo "Y" | source /data/tier0/ReplayPipeline/00_pypi_deploy_replay.sh
         
@@ -161,7 +145,7 @@ jobs:
         if [ "${PATCH_OPTION}" = "Patch" ]; then
           echo "Patches requested, applying..."
           
-          ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP4
+          ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch 
           source env.sh
           
           echo "About to execute patch logic..."
@@ -195,7 +179,7 @@ jobs:
       run: |
         echo "=== Step 5: Starting agent ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP5
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch 
         source env.sh
         
         echo "Starting replace the new configuration file...."
@@ -220,23 +204,21 @@ jobs:
       run: |
         echo "=== Step 6: Monitoring logs ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP6
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch 
         source env.sh
         
         echo "Agent started, now monitoring logs..."
         
-        # Monitor logs for 30 seconds (instead of 600)
         echo "Monitoring Tier0Feeder logs for 30 seconds..."
-        timeout 30 tail -f /data/tier0/WMAgent.venv3/srv/wmagent/${WMCORE_VERSION}/install/Tier0Feeder/ComponentLog 2>/dev/null || true
+        timeout 600 tail -f /data/tier0/WMAgent.venv3/srv/wmagent/${WMCORE_VERSION}/install/Tier0Feeder/ComponentLog 2>/dev/null || true
         
         echo "Log monitoring completed"
         
-        # Final status check
         echo "Final agent status:"
         manage status || true
         
         echo "Pipeline execution finished successfully"
-        STEP6
+        
 
     - name: Summary
       env:
