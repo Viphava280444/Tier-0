@@ -47,6 +47,15 @@ on:
         required: false        
         default: '3.12'
 
+      force_stop:
+        description: 'Force stop even if jobs are running (WARNING: This will terminate all running jobs!)'
+        required: true
+        type: choice
+        options:
+        - 'No'
+        - 'Yes'
+        default: 'No'
+
 jobs:
   deploy-the-replay:
     runs-on: cmst0
@@ -57,21 +66,69 @@ jobs:
         kinit cmst0@CERN.CH -k -t /home/cmsbld/cmst0.keytab
         echo "Kerberos authentication successful"
 
-    - name: Step 1 - Clean and prepare environment
+    - name: Step 1 - Check running jobs and clean environment
       env:
         REPLAY_OPTION: ${{ github.event.inputs.Replay }}
+        FORCE_STOP: ${{ github.event.inputs.force_stop }}
       run: |
-        echo "=== Step 1: Cleaning environment on ${REPLAY_OPTION} ==="
+        echo "=== Step 1: Checking for running jobs and cleaning environment on ${REPLAY_OPTION} ==="
         
         ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << 'STEP1'
-
         
         echo "Terminal environment cleaned up"
-        
         source env.sh
         
+        echo "Checking for running HTCondor jobs..."
+        RUNNING_JOBS=$(condor_q -nobatch -format "%s\n" ClusterId 2>/dev/null | wc -l)
+        
+        if [ "$RUNNING_JOBS" -gt 0 ]; then
+            echo "================================================"
+            echo "WARNING: Found $RUNNING_JOBS running jobs!"
+            echo "================================================"
+            
+            echo "Current job status:"
+            condor_q -nobatch
+            
+            echo ""
+            echo "Job summary by status:"
+            condor_q -totals
+            
+            if [ "${FORCE_STOP}" = "Yes" ]; then
+                echo ""
+                echo "FORCE_STOP is enabled - proceeding with job removal..."
+                echo "Removing all running jobs..."
+                condor_rm -all
+                
+                echo "Waiting for jobs to be removed..."
+                sleep 10
+                
+                REMAINING_JOBS=$(condor_q -nobatch -format "%s\n" ClusterId 2>/dev/null | wc -l)
+                if [ "$REMAINING_JOBS" -gt 0 ]; then
+                    echo "Warning: $REMAINING_JOBS jobs still in queue after removal attempt"
+                else
+                    echo "All jobs successfully removed"
+                fi
+            else
+                echo ""
+                echo "=========================================="
+                echo "DEPLOYMENT STOPPED"
+                echo "=========================================="
+                echo "There are $RUNNING_JOBS jobs currently running."
+                echo "Options:"
+                echo "1. Wait for jobs to complete naturally"
+                echo "2. Re-run this pipeline with 'force_stop: true' to override"
+                echo "3. Manually stop jobs with: condor_rm -all"
+                echo ""
+                echo "To check job status: condor_q"
+                echo "To monitor job progress: watch condor_q"
+                echo "=========================================="
+                exit 1
+            fi
+        else
+            echo "No running jobs found - safe to proceed"
+        fi
+        
         echo "Stopping existing processes..."
-        condor_rm -all 2>/dev/null || true
         stop_agent 2>/dev/null || true
         
         echo "Environment preparation completed"
