@@ -205,10 +205,10 @@ jobs:
       run: |
         echo "=== Step 4: Patch application ==="
         
-        if [ "\${PATCH_OPTION}" = "Patch" ]; then
+        if [ "${PATCH_OPTION}" = "Patch" ]; then
           echo "Patches requested, applying..."
           
-          ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP4
+          ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << 'STEP4'
           source env.sh
           
           echo "About to execute patch logic..."
