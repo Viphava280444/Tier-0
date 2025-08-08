@@ -93,7 +93,7 @@ jobs:
             echo "Job summary by status:"
             condor_q -totals
             
-            if [ "${FORCE_STOP}" = "Yes" ]; then
+            if [ "\${FORCE_STOP}" = "Yes" ]; then
                 echo ""
                 echo "FORCE_STOP is enabled - proceeding with job removal..."
                 echo "Removing all running jobs..."
@@ -204,7 +204,7 @@ jobs:
       run: |
         echo "=== Step 4: Patch application ==="
         
-        if [ "${PATCH_OPTION}" = "Patch" ]; then
+        if [ "\${PATCH_OPTION}" = "Patch" ]; then
           echo "Patches requested, applying..."
           
           ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP4
