@@ -73,7 +73,7 @@ jobs:
       run: |
         echo "=== Step 1: Checking for running jobs and cleaning environment on ${REPLAY_OPTION} ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << 'STEP1'
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch FORCE_STOP="${FORCE_STOP}" bash -s << 'STEP1'
         
         echo "Terminal environment cleaned up"
         source env.sh
@@ -93,7 +93,7 @@ jobs:
             echo "Job summary by status:"
             condor_q -totals
             
-            if [ "\${FORCE_STOP}" = "Yes" ]; then
+            if [ "${FORCE_STOP}" = "Yes" ]; then
                 echo ""
                 echo "FORCE_STOP is enabled - proceeding with job removal..."
                 echo "Removing all running jobs..."
