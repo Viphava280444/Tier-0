@@ -208,24 +208,25 @@ jobs:
         if [ "${PATCH_OPTION}" = "Patch" ]; then
           echo "Patches requested, applying..."
           
-          ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << 'STEP4'
+          ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch \
+            PATCH_URL="${PATCH_URL}" PYTHON_VERSION="${PYTHON_VERSION}" bash -s << 'STEP4'
           source env.sh
           
           echo "About to execute patch logic..."
           echo "Applying patches: ${PATCH_URL}"
           
           IFS=',' read -ra PATCHES <<< "${PATCH_URL}"
-          for patch_num in "\${PATCHES[@]}"; do
-              patch_num=\$(echo \$patch_num | tr -d ' ')
-              echo "Applying patch PR #\$patch_num"
+          for patch_num in "${PATCHES[@]}"; do
+              patch_num=$(echo $patch_num | tr -d ' ')
+              echo "Applying patch PR #$patch_num"
               
-              curl -L "https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/\${patch_num}.patch" | \
+              curl -L "https://patch-diff.githubusercontent.com/raw/dmwm/T0/pull/${patch_num}.patch" | \
                   patch -f -d "/data/tier0/WMAgent.venv3/lib/python${PYTHON_VERSION}/site-packages/" -p 3
               
-              if [ \$? -eq 0 ]; then
-                  echo "Patch \$patch_num applied successfully"
+              if [ $? -eq 0 ]; then
+                  echo "Patch $patch_num applied successfully"
               else
-                  echo "Warning: Patch \$patch_num may have failed"
+                  echo "Warning: Patch $patch_num may have failed"
               fi
           done
           
