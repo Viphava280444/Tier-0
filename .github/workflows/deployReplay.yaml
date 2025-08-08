@@ -73,7 +73,7 @@ jobs:
       run: |
         echo "=== Step 1: Checking for running jobs and cleaning environment on ${REPLAY_OPTION} ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP1
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << 'STEP1'
         
         echo "Terminal environment cleaned up"
         source env.sh
