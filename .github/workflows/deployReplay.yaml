@@ -15,7 +15,8 @@ on:
         options:
         - 'vocms047'
         - 'vocms0500'
-        default: 'vocms0500'
+        - 'vocms05011'
+        default: 'vocms05011'
 
       Patch:
         description: 'Choose one option to patch'
