@@ -130,6 +130,7 @@ jobs:
         
         echo "Stopping existing processes..."
         stop_agent 2>/dev/null || true
+        pkill -9 -f wmcoreD
         
         echo "Environment preparation completed"
         STEP1
