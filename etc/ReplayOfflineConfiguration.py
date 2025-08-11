@@ -7,6 +7,7 @@ from __future__ import print_function
 from T0.RunConfig.Tier0Config import addDataset
 from T0.RunConfig.Tier0Config import createTier0Config
 from T0.RunConfig.Tier0Config import setAcquisitionEra
+from T0.RunConfig.Tier0Config import setEmulationAcquisitionEra
 from T0.RunConfig.Tier0Config import setDefaultScramArch
 from T0.RunConfig.Tier0Config import setScramArch
 from T0.RunConfig.Tier0Config import setBaseRequestPriority
@@ -40,7 +41,7 @@ setConfigVersion(tier0Config, "replace with real version")
 # 382686 - Collisions, 43.3 pb-1, 23.9583 TB NEW
 # 386674  Cosmics ~40 minutes in Run2024I with occupancy issues
 
-setInjectRuns(tier0Config, [392204]) # 386925: 2024 Collisions, 390094: 2025 Cosmics, 390951: 2025 900 GeV Collisions
+setInjectRuns(tier0Config, [393274]) # 386925: 2024 Collisions, 390094: 2025 Cosmics, 390951: 2025 900 GeV Collisions
 
 # Use this in order to limit the number of lumisections to process
 #setInjectLimit(tier0Config, 10)
@@ -80,10 +81,33 @@ addSiteConfig(tier0Config, "EOS_PILOT",
 #  Data type
 #  Processing site (where jobs run)
 #  PhEDEx locations
-setAcquisitionEra(tier0Config, "Tier0_REPLAY_2025")
+
+#maxRunPreviousEra = 392206
+acquisitionEra = {
+    'default' : 'Tier0_REPLAY_2025',
+    #'maxRun' : {maxRunPreviousEra : 'Tier0_REPLAY_2025A'}
+}
+setAcquisitionEra(tier0Config, acquisitionEra)
+setEmulationAcquisitionEra(tier0Config, "Emulation2025", repack=False)
 setBaseRequestPriority(tier0Config, 260000)
 setBackfill(tier0Config, 1)
-setBulkDataType(tier0Config, "data")
+
+# Basic Configuration:
+#  - The 'default' key sets the bulk data type for all runs unless overridden
+
+# Override Options (Choose ONE method):
+#   acqEra: Use acquisition era to specify data type (era-based configuration)
+#   maxRun: Use run thresholds to specify data type (run-based configuration)
+
+# IMPORTANT: You cannot use both acqEra and maxRun simultaneously
+# Choose either era-based OR run-based configuration, not both
+
+#maxRunPreviousBulkData = 388621
+bulkData = { 
+	'default' : "data", 
+	#'maxRun' : {maxRunPreviousBulkData : "hidata"}
+}
+setBulkDataType(tier0Config, bulkData)
 setProcessingSite(tier0Config, processingSite)
 setStreamerPNN(tier0Config, streamerPNN)
 setStorageSite(tier0Config, storageSite)
@@ -123,7 +147,7 @@ setPromptCalibrationConfig(tier0Config,
 
 # Defaults for CMSSW version
 defaultCMSSWVersion = {
-    'default': "CMSSW_15_0_10"
+    'default': "CMSSW_15_0_10_patch1"
 }
 
 # Configure ScramArch
@@ -157,7 +181,7 @@ alcarawProcVersion = dt
 # Defaults for GlobalTag
 
 
-expressGlobalTag = "150X_dataRun3_Express_v1"
+expressGlobalTag = "150X_dataRun3_Express_v2"
 promptrecoGlobalTag = "150X_dataRun3_Prompt_v1"
 repackGlobalTag = "150X_dataRun3_Prompt_v1_ParkingDoubleMuonLowMass_v2"
 
