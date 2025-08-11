@@ -30,6 +30,7 @@ from T0.RunConfig.Tier0Config import addSiteConfig
 from T0.RunConfig.Tier0Config import setStorageSite
 from T0.RunConfig.Tier0Config import setExtraStreamDatasetMap
 from T0.RunConfig.Tier0Config import setHelperAgentStreams
+from T0.RunConfig.Tier0Config import setInjectLimit
 
 # Create the Tier0 configuration object
 tier0Config = createTier0Config()
@@ -41,7 +42,8 @@ setConfigVersion(tier0Config, "replace with real version")
 # 382686 - Collisions, 43.3 pb-1, 23.9583 TB NEW
 # 386674  Cosmics ~40 minutes in Run2024I with occupancy issues
 
-setInjectRuns(tier0Config, [393274]) # 386925: 2024 Collisions, 390094: 2025 Cosmics, 390951: 2025 900 GeV Collisions
+setInjectRuns(tier0Config, [393274])
+setInjectLimit(tier0Config, [50, 100]) # 386925: 2024 Collisions, 390094: 2025 Cosmics, 390951: 2025 900 GeV Collisions
 
 # Use this in order to limit the number of lumisections to process
 #setInjectLimit(tier0Config, 10)
