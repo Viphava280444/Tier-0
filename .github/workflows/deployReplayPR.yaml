@@ -360,9 +360,7 @@ jobs:
 
               PATCH_CMD="curl -L \"https://patch-diff.githubusercontent.com/raw/\$PATCH_REPO/pull/\$patch_num.patch\" | patch -f -d \"/data/tier0/WMAgent.venv3/lib/python\$PYTHON_VERSION/site-packages/\" -p 3"
               echo "\$PATCH_CMD" >> /data/tier0/ReplayPipeline/00_pypi_patches.sh              
-              # curl -L "https://patch-diff.githubusercontent.com/raw/${PATCH_REPO}/pull/${patch_num}.patch" | \
-              #     patch -f -d "/data/tier0/WMAgent.venv3/lib/python${PYTHON_VERSION}/site-packages/" -p 3
-              
+
               if [ $? -eq 0 ]; then
                   echo "Patch $patch_num applied successfully"
               else
