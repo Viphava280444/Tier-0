@@ -336,12 +336,52 @@ jobs:
         echo "Configuration setup completed"
         STEP2
 
-    - name: Step 3 - Deploy WMAgent
+    - name: Step 3 - Apply patches (if requested)
+      id: apply_patches
+      run: |
+        echo "=== Step 3: Patch application ==="
+        
+        if [ "${PATCH_OPTION}" = "Patch" ]; then
+          echo "Patches requested, applying..."
+          
+          ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch \
+            PATCH_URL="${PATCH_URL}" PATCH_REPO="${PATCH_REPO}" PYTHON_VERSION="${PYTHON_VERSION}" bash -s << 'STEP3'
+          source env.sh
+          
+          echo "About to execute patch logic..."
+          echo "Applying patches: ${PATCH_URL}"
+
+          echo -n > /data/tier0/ReplayPipeline/00_pypi_patches.sh
+          
+          IFS=',' read -ra PATCHES <<< "${PATCH_URL}"
+          for patch_num in "${PATCHES[@]}"; do
+              patch_num=$(echo $patch_num | tr -d ' ')
+              echo "Applying patch PR #$patch_num"
+              
+              echo "curl -L \"https://patch-diff.githubusercontent.com/raw/${PATCH_REPO}/pull/${patch_num}.patch\" | patch -f -d \"/data/tier0/WMAgent.venv3/lib/python${PYTHON_VERSION}/site-packages/\" -p 3" >> /data/tier0/ReplayPipeline/00_pypi_patches.sh
+              # curl -L "https://patch-diff.githubusercontent.com/raw/${PATCH_REPO}/pull/${patch_num}.patch" | \
+              #     patch -f -d "/data/tier0/WMAgent.venv3/lib/python${PYTHON_VERSION}/site-packages/" -p 3
+              
+              if [ $? -eq 0 ]; then
+                  echo "Patch $patch_num applied successfully"
+              else
+                  echo "Warning: Patch $patch_num may have failed"
+              fi
+          done
+          
+          echo "All patches processed"
+        STEP3
+        else
+          echo "No patches requested, skipping..."
+        fi
+
+
+    - name: Step 4 - Deploy WMAgent
       id: deploy_agent
       run: |
-        echo "=== Step 3: Deploying WMAgent ==="
+        echo "=== Step 4: Deploying WMAgent ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP3
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP4
         source env.sh
         cd /data/tier0/ReplayPipeline
         
@@ -358,43 +398,8 @@ jobs:
         echo "Y" | source /data/tier0/ReplayPipeline/00_pypi_deploy_replay.sh
         
         echo "Deployment completed"
-        STEP3
-
-    - name: Step 4 - Apply patches (if requested)
-      id: apply_patches
-      run: |
-        echo "=== Step 4: Patch application ==="
-        
-        if [ "${PATCH_OPTION}" = "Patch" ]; then
-          echo "Patches requested, applying..."
-          
-          ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch \
-            PATCH_URL="${PATCH_URL}" PATCH_REPO="${PATCH_REPO}" PYTHON_VERSION="${PYTHON_VERSION}" bash -s << 'STEP4'
-          source env.sh
-          
-          echo "About to execute patch logic..."
-          echo "Applying patches: ${PATCH_URL}"
-          
-          IFS=',' read -ra PATCHES <<< "${PATCH_URL}"
-          for patch_num in "${PATCHES[@]}"; do
-              patch_num=$(echo $patch_num | tr -d ' ')
-              echo "Applying patch PR #$patch_num"
-              
-              curl -L "https://patch-diff.githubusercontent.com/raw/${PATCH_REPO}/pull/${patch_num}.patch" | \
-                  patch -f -d "/data/tier0/WMAgent.venv3/lib/python${PYTHON_VERSION}/site-packages/" -p 3
-              
-              if [ $? -eq 0 ]; then
-                  echo "Patch $patch_num applied successfully"
-              else
-                  echo "Warning: Patch $patch_num may have failed"
-              fi
-          done
-          
-          echo "All patches processed"
         STEP4
-        else
-          echo "No patches requested, skipping..."
-        fi
+
 
     - name: Step 5 - Start agent and finalize
       id: start_agent
