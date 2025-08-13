@@ -121,6 +121,10 @@ jobs:
           
           RECOMMENDATIONS="${RECOMMENDATIONS}
 
+
+        else
+          RECOMMENDATIONS="⚠️ **No servers currently available for deployment**"
+        fi
         
         COMMENT="📋 **Server Status Report**
 
