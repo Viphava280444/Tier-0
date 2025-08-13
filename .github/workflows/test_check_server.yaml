@@ -1,0 +1,206 @@
+name: Server Status Checker
+
+# GLOBAL CONFIGURATION
+env:
+  ALLOWED_SERVERS: "vocms047,vocms05011,vocms05012"
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  check-server-status:
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '/check-servers')
+    runs-on: cmst0
+    
+    steps:
+    - name: Authenticate with Kerberos
+      id: kerberos
+      run: |
+        kinit cmst0@CERN.CH -k -t /home/cmsbld/cmst0.keytab
+        echo "Kerberos authentication successful"
+
+    - name: Post checking start comment
+      run: |
+        COMMENT="🔍 **Server Status Check Started**
+        
+        Checking status of all available servers...
+        
+        **Servers to check:**
+        $(echo "${{ env.ALLOWED_SERVERS }}" | tr ',' '\n' | sed 's/^/        - `/' | sed 's/$/`/')
+        
+        ⏳ **Analysis in progress...**
+        
+        [View workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+        
+        curl -X POST \
+          -H "Authorization: token ${{ github.token }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Content-Type: application/json" \
+          "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
+          -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
+
+    - name: Check all servers status
+      id: check_all_servers
+      run: |
+        echo "=== Checking status of all servers ==="
+        
+        # Initialize arrays for different server states
+        EMPTY_SERVERS=()
+        BUSY_SERVERS=()
+        ERROR_SERVERS=()
+        
+        # Initialize detailed report
+        DETAILED_REPORT=""
+        SUMMARY_REPORT=""
+        
+        # Convert comma-separated servers to array
+        IFS=',' read -ra SERVERS <<< "${{ env.ALLOWED_SERVERS }}"
+        
+        for server_raw in "${SERVERS[@]}"; do
+          server=$(echo $server_raw | tr -d ' ')
+          echo "Checking server: $server"
+          
+          # Check server connectivity and job status
+          SERVER_STATUS=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -K cmst0@${server}.cern.ch bash -s << 'SERVER_CHECK'
+            # Source environment
+            source env.sh 2>/dev/null || echo "WARNING: env.sh not found"
+            
+            # Check if condor is available and get job count
+            if command -v condor_q >/dev/null 2>&1; then
+              RUNNING_JOBS=$(condor_q -nobatch -format "%s\n" ClusterId 2>/dev/null | wc -l)
+              if [ $? -eq 0 ]; then
+                echo "SUCCESS:$RUNNING_JOBS"
+                
+                # Get detailed job info if jobs exist
+                if [ "$RUNNING_JOBS" -gt 0 ]; then
+                  echo "JOBS_DETAIL:"
+                  condor_q -nobatch -format "JobId: %s, " ClusterId -format "Owner: %s, " Owner -format "Status: %s\n" JobStatus 2>/dev/null | head -10
+                  echo "JOBS_SUMMARY:"
+                  condor_q -totals 2>/dev/null
+                fi
+              else
+                echo "ERROR:condor_q_failed"
+              fi
+            else
+              echo "ERROR:condor_not_available"
+            fi
+        SERVER_CHECK
+        2>&1)
+          
+          # Parse server response
+          if echo "$SERVER_STATUS" | grep -q "^SUCCESS:"; then
+            JOB_COUNT=$(echo "$SERVER_STATUS" | grep "^SUCCESS:" | cut -d':' -f2)
+            
+            if [ "$JOB_COUNT" -eq 0 ]; then
+              EMPTY_SERVERS+=("$server")
+              DETAILED_REPORT+="\n🟢 **$server** - ✅ Empty (0 jobs)\n"
+            else
+              BUSY_SERVERS+=("$server:$JOB_COUNT")
+              DETAILED_REPORT+="\n🔴 **$server** - 🚧 Busy ($JOB_COUNT jobs running)\n"
+              
+              # Add job details if available
+              JOB_DETAILS=$(echo "$SERVER_STATUS" | sed -n '/JOBS_DETAIL:/,/JOBS_SUMMARY:/p' | grep -v "JOBS_DETAIL:\|JOBS_SUMMARY:")
+              if [ ! -z "$JOB_DETAILS" ]; then
+                DETAILED_REPORT+="\`\`\`\n$JOB_DETAILS\n\`\`\`\n"
+              fi
+              
+              JOB_SUMMARY=$(echo "$SERVER_STATUS" | sed -n '/JOBS_SUMMARY:/,$p' | grep -v "JOBS_SUMMARY:")
+              if [ ! -z "$JOB_SUMMARY" ]; then
+                DETAILED_REPORT+="\`\`\`\n$JOB_SUMMARY\n\`\`\`\n"
+              fi
+            fi
+          else
+            ERROR_SERVERS+=("$server")
+            ERROR_REASON=$(echo "$SERVER_STATUS" | tail -1)
+            DETAILED_REPORT+="\n⚠️ **$server** - ❌ Error: $ERROR_REASON\n"
+          fi
+          
+          echo "Server $server checked - Status: $SERVER_STATUS"
+        done
+        
+        # Generate summary
+        TOTAL_SERVERS=${#SERVERS[@]}
+        EMPTY_COUNT=${#EMPTY_SERVERS[@]}
+        BUSY_COUNT=${#BUSY_SERVERS[@]}
+        ERROR_COUNT=${#ERROR_SERVERS[@]}
+        
+        SUMMARY_REPORT="📊 **Summary:** $EMPTY_COUNT empty, $BUSY_COUNT busy, $ERROR_COUNT errors (of $TOTAL_SERVERS total)"
+        
+        # Export results for the comment step
+        echo "EMPTY_SERVERS=${EMPTY_SERVERS[*]}" >> $GITHUB_ENV
+        echo "BUSY_SERVERS=${BUSY_SERVERS[*]}" >> $GITHUB_ENV
+        echo "ERROR_SERVERS=${ERROR_SERVERS[*]}" >> $GITHUB_ENV
+        echo "SUMMARY_REPORT<<EOF" >> $GITHUB_ENV
+        echo "$SUMMARY_REPORT" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+        echo "DETAILED_REPORT<<EOF" >> $GITHUB_ENV
+        echo -e "$DETAILED_REPORT" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+
+    - name: Post server status report
+      if: always()
+      run: |
+        # Build the recommendation section
+        RECOMMENDATIONS=""
+        if [ ! -z "$EMPTY_SERVERS" ]; then
+          RECOMMENDATIONS+="\n\n🎯 **Deployment Recommendations:**\n"
+          for server in $EMPTY_SERVERS; do
+            RECOMMENDATIONS+="\n✅ **$server** is available for deployment"
+          done
+          RECOMMENDATIONS+="\n\n**To deploy to any of these servers, use:**\n\`\`\`\n/deploy-replay\nserver: [server-name]\n\`\`\`"
+        else
+          RECOMMENDATIONS+="\n\n⚠️ **No servers are currently available for deployment**"
+          if [ ! -z "$BUSY_SERVERS" ]; then
+            RECOMMENDATIONS+="\n\nYou can force deployment by stopping running jobs:\n\`\`\`\n/deploy-replay\nserver: [server-name]\nforce_stop: Yes\n\`\`\`"
+          fi
+        fi
+        
+        # Generate timestamp
+        TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+        
+        COMMENT="📋 **Server Status Report**
+        
+        $SUMMARY_REPORT
+        
+        **Detailed Status:**
+        $DETAILED_REPORT
+        
+        $RECOMMENDATIONS
+        
+        ---
+        
+        📅 **Report generated:** $TIMESTAMP  
+        🔗 **Workflow:** [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})  
+        ♻️ **Refresh:** Comment \`/check-servers\` to run again"
+        
+        curl -X POST \
+          -H "Authorization: token ${{ github.token }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Content-Type: application/json" \
+          "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
+          -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
+
+    - name: Post failure comment
+      if: failure()
+      run: |
+        COMMENT="❌ **Server Status Check Failed**
+        
+        There was an error while checking server status.
+        
+        **Possible causes:**
+        - Network connectivity issues
+        - Kerberos authentication problems  
+        - Server accessibility issues
+        - HTCondor service problems
+        
+        [View detailed logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for troubleshooting.
+        
+        Try running \`/check-servers\` again in a few minutes."
+        
+        curl -X POST \
+          -H "Authorization: token ${{ github.token }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Content-Type: application/json" \
+          "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
+          -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
