@@ -520,8 +520,13 @@ jobs:
           echo "All patches processed"
         STEP3
         else
+
           echo "No patches requested, skipping..."
-          echo "# No patches requested" -n > /data/tier0/ReplayPipeline/00_pypi_patches.sh
+          ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch bash -s << 'STEP3_NO_PATCH'
+          echo "# No patches requested" > /data/tier0/ReplayPipeline/00_pypi_patches.sh
+          echo "Created empty patch file"
+          
+        STEP3_NO_PATCH
         fi
 
 
