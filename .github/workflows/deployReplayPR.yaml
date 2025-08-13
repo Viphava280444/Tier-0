@@ -521,7 +521,7 @@ jobs:
         STEP3
         else
           echo "No patches requested, skipping..."
-          echo -n > /data/tier0/ReplayPipeline/00_pypi_patches.sh
+          echo "# No patches requested" -n > /data/tier0/ReplayPipeline/00_pypi_patches.sh
         fi
 
 
