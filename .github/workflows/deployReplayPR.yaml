@@ -182,6 +182,7 @@ jobs:
         
         RECOMMENDATIONS=""
         if [ "$EMPTY_COUNT" -gt 0 ]; then
+          RECOMMENDATIONS="🎯 
 
         Available servers for deployment:"
           for server in $EMPTY_SERVERS; do
@@ -519,12 +520,11 @@ jobs:
           echo "All patches processed"
         STEP3
         else
-
+        
           echo "No patches requested, skipping..."
           ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch bash -s << 'STEP3_NO_PATCH'
           echo "# No patches requested" > /data/tier0/ReplayPipeline/00_pypi_patches.sh
           echo "Created empty patch file"
-
         STEP3_NO_PATCH
         fi
 
