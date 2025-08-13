@@ -94,26 +94,38 @@ jobs:
             
             if [ "$JOB_COUNT" -eq 0 ]; then
               EMPTY_SERVERS+=("$server")
-              DETAILED_REPORT+="\n🟢 **$server** - ✅ Empty (0 jobs)\n"
+              DETAILED_REPORT+="
+🟢 **$server** - ✅ Empty (0 jobs)
+"
             else
               BUSY_SERVERS+=("$server:$JOB_COUNT")
-              DETAILED_REPORT+="\n🔴 **$server** - 🚧 Busy ($JOB_COUNT jobs running)\n"
+              DETAILED_REPORT+="
+🔴 **$server** - 🚧 Busy ($JOB_COUNT jobs running)
+"
               
               # Add job details if available
               JOB_DETAILS=$(echo "$SERVER_STATUS" | sed -n '/JOBS_DETAIL:/,/JOBS_SUMMARY:/p' | grep -v "JOBS_DETAIL:\|JOBS_SUMMARY:")
               if [ ! -z "$JOB_DETAILS" ]; then
-                DETAILED_REPORT+="\`\`\`\n$JOB_DETAILS\n\`\`\`\n"
+                DETAILED_REPORT+="\`\`\`
+$JOB_DETAILS
+\`\`\`
+"
               fi
               
               JOB_SUMMARY=$(echo "$SERVER_STATUS" | sed -n '/JOBS_SUMMARY:/,$p' | grep -v "JOBS_SUMMARY:")
               if [ ! -z "$JOB_SUMMARY" ]; then
-                DETAILED_REPORT+="\`\`\`\n$JOB_SUMMARY\n\`\`\`\n"
+                DETAILED_REPORT+="\`\`\`
+$JOB_SUMMARY
+\`\`\`
+"
               fi
             fi
           else
             ERROR_SERVERS+=("$server")
             ERROR_REASON=$(echo "$SERVER_STATUS" | tail -1)
-            DETAILED_REPORT+="\n⚠️ **$server** - ❌ Error: $ERROR_REASON\n"
+            DETAILED_REPORT+="
+⚠️ **$server** - ❌ Error: $ERROR_REASON
+"
           fi
           
           echo "Server $server checked - Status: $SERVER_STATUS"
@@ -135,27 +147,15 @@ jobs:
         echo "$SUMMARY_REPORT" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
         echo "DETAILED_REPORT<<EOF" >> $GITHUB_ENV
-        echo -e "$DETAILED_REPORT" >> $GITHUB_ENV
+        printf "%s" "$DETAILED_REPORT" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+        echo "RECOMMENDATIONS<<EOF" >> $GITHUB_ENV
+        printf "%s" "$RECOMMENDATIONS" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
 
     - name: Post server status report
       if: always()
       run: |
-        # Build the recommendation section
-        RECOMMENDATIONS=""
-        if [ ! -z "$EMPTY_SERVERS" ]; then
-          RECOMMENDATIONS+="\n\n🎯 **Deployment Recommendations:**\n"
-          for server in $EMPTY_SERVERS; do
-            RECOMMENDATIONS+="\n✅ **$server** is available for deployment"
-          done
-          RECOMMENDATIONS+="\n\n**To deploy to any of these servers, use:**\n\`\`\`\n/deploy-replay\nserver: [server-name]\n\`\`\`"
-        else
-          RECOMMENDATIONS+="\n\n⚠️ **No servers are currently available for deployment**"
-          if [ ! -z "$BUSY_SERVERS" ]; then
-            RECOMMENDATIONS+="\n\nYou can force deployment by stopping running jobs:\n\`\`\`\n/deploy-replay\nserver: [server-name]\nforce_stop: Yes\n\`\`\`"
-          fi
-        fi
-        
         # Generate timestamp
         TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
         
@@ -165,7 +165,6 @@ jobs:
         
         **Detailed Status:**
         $DETAILED_REPORT
-        
         $RECOMMENDATIONS
         
         ---
