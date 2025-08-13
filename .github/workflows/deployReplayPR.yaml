@@ -187,7 +187,7 @@ jobs:
         Available servers for deployment:"
           for server in $EMPTY_SERVERS; do
             RECOMMENDATIONS="${RECOMMENDATIONS}
-        ✅ **${server}** is ready for deployment 55555555"
+        ✅ **${server}** is ready for deployment"
           done
           
           RECOMMENDATIONS="${RECOMMENDATIONS}"
