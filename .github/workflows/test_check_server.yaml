@@ -121,14 +121,6 @@ jobs:
           
           RECOMMENDATIONS="${RECOMMENDATIONS}
 
-        **To deploy to any of these servers, use:**
-        \`\`\`
-        /deploy-replay
-        server: [server-name]
-        \`\`\`"
-        else
-          RECOMMENDATIONS="⚠️ **No servers currently available for deployment**"
-        fi
         
         COMMENT="📋 **Server Status Report**
 
