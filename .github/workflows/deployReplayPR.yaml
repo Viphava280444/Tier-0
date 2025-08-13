@@ -182,9 +182,7 @@ jobs:
         
         RECOMMENDATIONS=""
         if [ "$EMPTY_COUNT" -gt 0 ]; then
-          RECOMMENDATIONS="🎯 
-
-        Available servers for deployment:"
+          RECOMMENDATIONS="🎯 **Available servers for deployment:**"
           for server in $EMPTY_SERVERS; do
             RECOMMENDATIONS="${RECOMMENDATIONS}
         ✅ **${server}** is ready for deployment"
