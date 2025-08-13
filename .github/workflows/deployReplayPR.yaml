@@ -11,7 +11,7 @@ env:
   DEFAULT_PATCH_REPO: "dmwm/T0"
   DEFAULT_FORCE_STOP: "No"
   DEFAULT_COMMIT: "5081"
-  ALLOWED_SERVERS: "vocms047, vocms05011, vocms05012"
+  ALLOWED_SERVERS: "vocms047, vocms0500, vocms05011, vocms05012"
 
 on:
   issue_comment:
