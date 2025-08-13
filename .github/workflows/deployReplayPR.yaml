@@ -180,27 +180,13 @@ jobs:
         "
         done
         
-        RECOMMENDATIONS=""
-        if [ "$EMPTY_COUNT" -gt 0 ]; then
-          RECOMMENDATIONS="🎯 **Available servers for deployment:**"
-          for server in $EMPTY_SERVERS; do
-            RECOMMENDATIONS="${RECOMMENDATIONS}
-        ✅ **${server}** is ready for deployment"
-          done
-          
-          RECOMMENDATIONS="${RECOMMENDATIONS}"
-        else
-          RECOMMENDATIONS="⚠️ **No servers currently available for deployment**"
-        fi
-        
         COMMENT="📋 **Server Status Report**
 
         📊 **Summary:** ${EMPTY_COUNT} empty, ${BUSY_COUNT} busy, ${ERROR_COUNT} errors (of ${TOTAL_SERVERS} total)
 
         **Detailed Status:**
         ${STATUS_LINES}
-        ${RECOMMENDATIONS}
-
+    
         ---"
 
         curl -X POST \
