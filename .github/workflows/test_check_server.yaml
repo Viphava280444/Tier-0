@@ -20,55 +20,29 @@ jobs:
         kinit cmst0@CERN.CH -k -t /home/cmsbld/cmst0.keytab
         echo "Kerberos authentication successful"
 
-    - name: Post checking start comment
-      run: |
-        COMMENT="🔍 **Server Status Check Started**
-        
-        Checking status of all available servers...
-        
-        **Servers to check:**
-        $(echo "${{ env.ALLOWED_SERVERS }}" | tr ',' '\n' | sed 's/^/        - `/' | sed 's/$/`/')
-        
-        ⏳ **Analysis in progress...**
-        
-        [View workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-        
-        curl -X POST \
-          -H "Authorization: token ${{ github.token }}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Content-Type: application/json" \
-          "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
-          -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
-
     - name: Check all servers status
       id: check_all_servers
       run: |
         echo "=== Checking status of all servers ==="
         
-        # Initialize arrays for different server states
         EMPTY_SERVERS=()
         BUSY_SERVERS=()
         ERROR_SERVERS=()
         
-        # Convert comma-separated servers to array
         IFS=',' read -ra SERVERS <<< "${{ env.ALLOWED_SERVERS }}"
         
         for server_raw in "${SERVERS[@]}"; do
           server=$(echo $server_raw | tr -d ' ')
           echo "Checking server: $server"
           
-          # Check server connectivity and job status
           SERVER_STATUS=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -K cmst0@${server}.cern.ch bash -s << 'SERVER_CHECK'
-            # Source environment
             source env.sh 2>/dev/null || echo "WARNING: env.sh not found"
             
-            # Check if condor is available and get job count
             if command -v condor_q >/dev/null 2>&1; then
               RUNNING_JOBS=$(condor_q -nobatch -format "%s\n" ClusterId 2>/dev/null | wc -l)
               if [ $? -eq 0 ]; then
                 echo "SUCCESS:$RUNNING_JOBS"
                 
-                # Get detailed job info if jobs exist
                 if [ "$RUNNING_JOBS" -gt 0 ]; then
                   echo "JOBS_DETAIL:"
                   condor_q -nobatch -format "JobId: %s, " ClusterId -format "Owner: %s, " Owner -format "Status: %s\n" JobStatus 2>/dev/null | head -10
@@ -84,7 +58,6 @@ jobs:
         SERVER_CHECK
         2>&1)
           
-          # Parse server response and categorize servers
           if echo "$SERVER_STATUS" | grep -q "^SUCCESS:"; then
             JOB_COUNT=$(echo "$SERVER_STATUS" | grep "^SUCCESS:" | cut -d':' -f2)
             
@@ -100,13 +73,11 @@ jobs:
           echo "Server $server checked"
         done
         
-        # Generate summary counts
         TOTAL_SERVERS=${#SERVERS[@]}
         EMPTY_COUNT=${#EMPTY_SERVERS[@]}
         BUSY_COUNT=${#BUSY_SERVERS[@]}
         ERROR_COUNT=${#ERROR_SERVERS[@]}
         
-        # Export results for the comment step
         echo "EMPTY_SERVERS=${EMPTY_SERVERS[*]}" >> $GITHUB_ENV
         echo "BUSY_SERVERS=${BUSY_SERVERS[*]}" >> $GITHUB_ENV
         echo "ERROR_SERVERS=${ERROR_SERVERS[*]}" >> $GITHUB_ENV
@@ -118,33 +89,26 @@ jobs:
     - name: Post server status report
       if: always()
       run: |
-        # Generate timestamp
-        TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
         
-        # Build status lines for each server
         STATUS_LINES=""
         
-        # Add empty servers
         for server in $EMPTY_SERVERS; do
-          STATUS_LINES="${STATUS_LINES}🟢 **${server}** - ✅ Empty (0 jobs)
+          STATUS_LINES="${STATUS_LINES}🟢 **${server}** - Empty (0 jobs)
         "
         done
         
-        # Add busy servers  
         for server_info in $BUSY_SERVERS; do
           server=$(echo $server_info | cut -d':' -f1)
           jobs=$(echo $server_info | cut -d':' -f2)
-          STATUS_LINES="${STATUS_LINES}🔴 **${server}** - 🚧 Busy (${jobs} jobs running)
+          STATUS_LINES="${STATUS_LINES}🔴 **${server}** - (${jobs} jobs running)
         "
         done
         
-        # Add error servers
         for server in $ERROR_SERVERS; do
           STATUS_LINES="${STATUS_LINES}⚠️ **${server}** - ❌ Connection/Service Error
         "
         done
         
-        # Build recommendations
         RECOMMENDATIONS=""
         if [ "$EMPTY_COUNT" -gt 0 ]; then
           RECOMMENDATIONS="🎯 **Deployment Recommendations:**
@@ -157,26 +121,7 @@ jobs:
           
           RECOMMENDATIONS="${RECOMMENDATIONS}
 
-        **To deploy to any available server:**
-        \`\`\`
-        /deploy-replay
-        server: [server-name]
-        \`\`\`"
-        else
-          RECOMMENDATIONS="⚠️ **No servers currently available for deployment**"
-          if [ "$BUSY_COUNT" -gt 0 ]; then
-            RECOMMENDATIONS="${RECOMMENDATIONS}
-
-        You can force deployment by stopping running jobs:
-        \`\`\`
-        /deploy-replay
-        server: [server-name]
-        force_stop: Yes
-        \`\`\`"
-          fi
-        fi
-        
-        # Create the complete comment
+      
         COMMENT="📋 **Server Status Report**
 
         📊 **Summary:** ${EMPTY_COUNT} empty, ${BUSY_COUNT} busy, ${ERROR_COUNT} errors (of ${TOTAL_SERVERS} total)
@@ -187,10 +132,7 @@ jobs:
 
         ---
 
-        📅 **Report generated:** ${TIMESTAMP}  
-        🔗 **Workflow:** [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})  
-        ♻️ **Refresh:** Comment \`/check-servers\` to run again"
-        
+
         curl -X POST \
           -H "Authorization: token ${{ github.token }}" \
           -H "Accept: application/vnd.github.v3+json" \
@@ -204,12 +146,6 @@ jobs:
         COMMENT="❌ **Server Status Check Failed**
         
         There was an error while checking server status.
-        
-        **Possible causes:**
-        - Network connectivity issues
-        - Kerberos authentication problems  
-        - Server accessibility issues
-        - HTCondor service problems
         
         [View detailed logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for troubleshooting.
         
