@@ -119,9 +119,7 @@ jobs:
         ✅ **${server}** is ready for deployment"
           done
           
-          RECOMMENDATIONS="${RECOMMENDATIONS}
-
-
+          RECOMMENDATIONS="${RECOMMENDATIONS}"
         else
           RECOMMENDATIONS="⚠️ **No servers currently available for deployment**"
         fi
