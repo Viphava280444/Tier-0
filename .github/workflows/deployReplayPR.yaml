@@ -647,8 +647,8 @@ jobs:
       run: |
         echo "=== Step 7: Extracting Deploy ID from Tier0Feeder logs ==="
         
-        DEPLOY_ID=$(ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch WMCORE_VERSION="${WMCORE_VERSION}" bash -s << 'EXTRACT_ID'
-        source env.sh
+        DEPLOY_ID=$(ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch WMCORE_VERSION="${WMCORE_VERSION}" bash -s << 'EXTRACT_ID' 2>/dev/null
+        source env.sh >/dev/null 2>&1
         
         LOG_FILE="/data/tier0/WMAgent.venv3/srv/wmagent/${WMCORE_VERSION}/install/Tier0Feeder/ComponentLog"
         
