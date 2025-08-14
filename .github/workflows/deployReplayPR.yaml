@@ -656,7 +656,7 @@ jobs:
         
         if [ -f "$LOG_FILE" ]; then
             # Wait a bit to ensure logs are written
-            sleep 5
+
             
             # Search for the Deploy ID pattern in the log file
             DEPLOY_ID=$(grep -o "Deploy ID: [0-9]*" "$LOG_FILE" 2>/dev/null | tail -1 | cut -d' ' -f3)
