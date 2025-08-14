@@ -842,12 +842,12 @@ jobs:
           "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
           -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
 
-    - name: Step 7 - Monitor logs
+    - name: Step 8 - Monitor logs
       id: monitor_logs
       run: |
-        echo "=== Step 7: Monitoring logs ==="
+        echo "=== Step 8: Monitoring logs ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP7
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP8
         source env.sh
         
         echo "Agent started, now monitoring logs..."
@@ -861,6 +861,6 @@ jobs:
         manage status || true
         
         echo "Pipeline execution finished successfully"
-        STEP7
+        STEP8
 
     
