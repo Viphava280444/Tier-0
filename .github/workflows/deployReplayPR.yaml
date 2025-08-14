@@ -561,25 +561,84 @@ jobs:
         echo "Agent started successfully"
         STEP5
 
-    - name: Step 6 - Monitor logs
-      id: monitor_logs
+    - name: Step 6 - Verify job submission and check for errors
+      id: verify_deployment
       run: |
-        echo "=== Step 6: Monitoring logs ==="
+        echo "=== Step 6: Verifying deployment success ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP6
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch WMCORE_VERSION="${WMCORE_VERSION}" bash -s << 'STEP6'
         source env.sh
         
-        echo "Agent started, now monitoring logs..."
+        echo "Starting 5-minute verification process..."
+        echo "Checking for job submissions and potential errors..."
         
-        echo "Monitoring Tier0Feeder logs for 30 seconds..."
-        timeout 600 tail -f /data/tier0/WMAgent.venv3/srv/wmagent/${WMCORE_VERSION}/install/Tier0Feeder/ComponentLog 2>/dev/null || true
+        VERIFICATION_TIMEOUT=300  # 5 minutes
+        CHECK_INTERVAL=5         # Check every 5 seconds
+        START_TIME=$(date +%s)
         
-        echo "Log monitoring completed"
+        LOG_FILE="/data/tier0/WMAgent.venv3/srv/wmagent/${WMCORE_VERSION}/install/Tier0Feeder/ComponentLog"
         
-        echo "Final agent status:"
-        manage status || true
+        while true; do
+            CURRENT_TIME=$(date +%s)
+            ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+            
+            echo "Check iteration at ${ELAPSED_TIME}s..."
+            
+            # Check for tracebacks in Tier0Feeder log
+            if [ -f "$LOG_FILE" ]; then
+                TRACEBACK_COUNT=$(grep -c "Traceback (most recent call last):" "$LOG_FILE" 2>/dev/null || echo "0")
+                if [ "$TRACEBACK_COUNT" -gt 0 ]; then
+                    echo "DEPLOYMENT FAILED: Found $TRACEBACK_COUNT traceback(s) in Tier0Feeder log"
+                    echo ""
+                    echo "Recent traceback(s):"
+                    echo "==================="
+                    grep -A 10 "Traceback (most recent call last):" "$LOG_FILE" | tail -20
+                    echo "==================="
+                    echo ""
+                    echo "Full log location: $LOG_FILE"
+                    exit 1
+                fi
+            else
+                echo "Warning: Tier0Feeder log not found at $LOG_FILE"
+            fi
+            
+            # Check for job submissions via condor_q
+            SUBMITTED_JOBS=$(condor_q -nobatch -format "%s\n" ClusterId 2>/dev/null | wc -l)
+            if [ "$SUBMITTED_JOBS" -gt 0 ]; then
+                echo "DEPLOYMENT SUCCESSFUL: Found $SUBMITTED_JOBS job(s) submitted to HTCondor"
+                echo ""
+                echo "Current job status:"
+                condor_q -nobatch 2>/dev/null || echo "Failed to get detailed job status"
+                echo ""
+                echo "Job summary:"
+                condor_q -totals 2>/dev/null || echo "Failed to get job summary"
+                echo ""
+                echo "Deployment verification completed successfully!"
+                exit 0
+            fi
+            
+            # Check if we've exceeded the timeout
+            if [ "$ELAPSED_TIME" -ge "$VERIFICATION_TIMEOUT" ]; then
+                echo "VERIFICATION TIMEOUT: No jobs submitted and no errors found in 5 minutes"
+                echo ""
+                echo "This could indicate:"
+                echo "- The system is still initializing (may need more time)"
+                echo "- No replay jobs are configured to run immediately"
+                echo "- There might be a configuration issue"
+                echo ""
+                echo "Current agent status:"
+                manage status || echo "Failed to get agent status"
+                echo ""
+                echo "Proceeding to log monitoring step for manual verification..."
+                break
+            fi
+            
+            echo "No jobs submitted yet, no errors found. Checking again in ${CHECK_INTERVAL} seconds..."
+            echo "Time remaining: $((VERIFICATION_TIMEOUT - ELAPSED_TIME)) seconds"
+            sleep $CHECK_INTERVAL
+        done
         
-        echo "Pipeline execution finished successfully"
+        echo "Verification phase completed"
         STEP6
 
     - name: Analyze failure reason
@@ -631,10 +690,10 @@ jobs:
           FAILURE_DETAILS="WMAgent was deployed but failed to start properly"
 
         
-        elif [[ "${{ steps.monitor_logs.outcome }}" == "failure" ]]; then
-          FAILED_STEP="Log Monitoring"
-          FAILURE_REASON="Log monitoring timed out or failed"
-          FAILURE_DETAILS="Could not access or monitor agent logs"
+        elif [[ "${{ steps.verify_deployment.outcome }}" == "failure" ]]; then
+          FAILED_STEP="Deployment Verification"
+          FAILURE_REASON="Tier0Feeder failed"
+          FAILURE_DETAILS="Either traceback errors were found in Tier0Feeder logs or verification process encountered an error"
 
         
         else
@@ -714,3 +773,26 @@ jobs:
           -H "Content-Type: application/json" \
           "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
           -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
+
+    - name: Step 7 - Monitor logs
+      id: monitor_logs
+      run: |
+        echo "=== Step 7: Monitoring logs ==="
+        
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP7
+        source env.sh
+        
+        echo "Agent started, now monitoring logs..."
+        
+        echo "Monitoring Tier0Feeder logs for 30 seconds..."
+        timeout 600 tail -f /data/tier0/WMAgent.venv3/srv/wmagent/${WMCORE_VERSION}/install/Tier0Feeder/ComponentLog 2>/dev/null || true
+        
+        echo "Log monitoring completed"
+        
+        echo "Final agent status:"
+        manage status || true
+        
+        echo "Pipeline execution finished successfully"
+        STEP7
+
+    
