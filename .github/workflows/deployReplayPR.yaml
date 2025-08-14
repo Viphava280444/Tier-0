@@ -647,12 +647,12 @@ jobs:
       run: |
         echo "=== Step 7: Extracting Deploy ID from Tier0Feeder logs ==="
         
+        # Extract only the Deploy ID number, filtering out all environment noise
         DEPLOY_ID=$(ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch WMCORE_VERSION="${WMCORE_VERSION}" bash -s << 'EXTRACT_ID' 2>/dev/null
+        # Source environment quietly
         source env.sh >/dev/null 2>&1
         
         LOG_FILE="/data/tier0/WMAgent.venv3/srv/wmagent/${WMCORE_VERSION}/install/Tier0Feeder/ComponentLog"
-        
-        echo "Searching for Deploy ID in log file: $LOG_FILE"
         
         if [ -f "$LOG_FILE" ]; then
             # Wait a bit to ensure logs are written
@@ -662,40 +662,37 @@ jobs:
             DEPLOY_ID=$(grep -o "Deploy ID: [0-9]*" "$LOG_FILE" 2>/dev/null | tail -1 | cut -d' ' -f3)
             
             if [ -n "$DEPLOY_ID" ] && [ "$DEPLOY_ID" -ne 0 ] 2>/dev/null; then
-                echo "Found Deploy ID: $DEPLOY_ID"
                 echo "$DEPLOY_ID"
+                exit 0
             else
                 # If not found immediately, wait a bit longer and try again
-                echo "Deploy ID not found yet, waiting 30 seconds for logs to update..."
                 sleep 30
                 
                 DEPLOY_ID=$(grep -o "Deploy ID: [0-9]*" "$LOG_FILE" 2>/dev/null | tail -1 | cut -d' ' -f3)
                 
                 if [ -n "$DEPLOY_ID" ] && [ "$DEPLOY_ID" -ne 0 ] 2>/dev/null; then
-                    echo "Found Deploy ID after waiting: $DEPLOY_ID"
                     echo "$DEPLOY_ID"
-                else
-                    echo "Deploy ID not found in logs"
-                    echo "NOT_FOUND"
+                    exit 0
                 fi
             fi
-        else
-            echo "Log file not found: $LOG_FILE"
-            echo "NOT_FOUND"
         fi
+        
+        echo "NOT_FOUND"
         EXTRACT_ID
         )
         
+        # Clean up the result - only keep numeric values
+        DEPLOY_ID=$(echo "$DEPLOY_ID" | grep -E '^[0-9]+$' | head -1)
+        
         echo "Deploy ID extraction result: $DEPLOY_ID"
         
-        if [ "$DEPLOY_ID" != "NOT_FOUND" ] && [ -n "$DEPLOY_ID" ]; then
+        if [ -n "$DEPLOY_ID" ] && [[ "$DEPLOY_ID" =~ ^[0-9]+$ ]]; then
             echo "Successfully extracted Deploy ID: $DEPLOY_ID"
             echo "DEPLOY_ID=$DEPLOY_ID" >> $GITHUB_ENV
         else
             echo "Could not extract Deploy ID from logs"
             echo "DEPLOY_ID=NOT_FOUND" >> $GITHUB_ENV
         fi
-
 
     - name: Analyze failure reason
       if: failure()
@@ -753,7 +750,6 @@ jobs:
 
         
         else
-          # Generic failure analysis
           FAILED_STEP="Deployment Process"
           FAILURE_REASON="Deployment failed during execution"
           FAILURE_DETAILS="Check workflow logs for specific error messages"
