@@ -621,16 +621,14 @@ jobs:
             if [ "$ELAPSED_TIME" -ge "$VERIFICATION_TIMEOUT" ]; then
                 echo "VERIFICATION TIMEOUT: No jobs submitted and no errors found in 5 minutes"
                 echo ""
-                echo "This could indicate:"
-                echo "- The system is still initializing (may need more time)"
-                echo "- No replay jobs are configured to run immediately"
-                echo "- There might be a configuration issue"
+                echo "The pipeline cannot automatically verify success or failure."
+                echo "Manual monitoring is required to determine the final status."
                 echo ""
                 echo "Current agent status:"
                 manage status || echo "Failed to get agent status"
                 echo ""
-                echo "Proceeding to log monitoring step for manual verification..."
-                break
+                echo "Setting timeout flag and continuing to next steps..."
+                exit 0
             fi
             
             echo "No jobs submitted yet, no errors found. Checking again in ${CHECK_INTERVAL} seconds..."
@@ -640,6 +638,71 @@ jobs:
         
         echo "Verification phase completed"
         STEP6
+        
+        # Set deployment status based on verification results
+        JOBS_SUBMITTED=$(ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch bash -s << 'CHECK_FINAL_STATUS'
+        source env.sh >/dev/null 2>&1
+        condor_q -nobatch -format "%s\n" ClusterId 2>/dev/null | wc -l
+        CHECK_FINAL_STATUS
+        )
+        
+        if [ "$JOBS_SUBMITTED" -gt 0 ]; then
+          echo "DEPLOYMENT_STATUS=SUCCESS" >> $GITHUB_ENV
+          echo "JOBS_FOUND=true" >> $GITHUB_ENV
+        else
+          echo "DEPLOYMENT_STATUS=TIMEOUT" >> $GITHUB_ENV
+          echo "JOBS_FOUND=false" >> $GITHUB_ENV
+        fi
+
+    - name: Step 6.5 - Post timeout notification
+      if: always() && steps.verify_deployment.outcome == 'success' && env.DEPLOYMENT_STATUS == 'TIMEOUT'
+      run: |
+        COMMENT="⏰ **Deployment Status - Manual Verification Required**
+          
+          **Verification Timeout Notice:**
+          The 5-minute automated verification period has completed without detecting job submissions or errors.
+          
+          **Current Situation:**
+          - ✅ WMAgent deployment completed successfully
+          - ✅ Agent services started without errors
+          - ⏳ No jobs detected in HTCondor queue yet
+          - ✅ No tracebacks found in Tier0Feeder logs
+          
+          **Next Steps:**
+          The pipeline will continue to extract Deploy ID and monitor logs, but **manual verification is recommended**:
+          
+          1. **Monitor Tier0Feeder logs manually:**
+             \`\`\`bash
+             ssh cmst0@${REPLAY_OPTION}.cern.ch
+             source env.sh
+             tail -f /data/tier0/WMAgent.venv3/srv/wmagent/${WMCORE_VERSION}/install/Tier0Feeder/ComponentLog
+             \`\`\`
+          
+          2. **Check for job submissions:**
+             \`\`\`bash
+             condor_q
+             \`\`\`
+          
+          3. **Monitor agent status:**
+             \`\`\`bash
+             manage status
+             \`\`\`
+          
+          **This is normal behavior when:**
+          - The system needs more time to initialize
+          - No replay jobs are configured to run immediately  
+          - Replay workflow depends on external triggers
+          
+          The pipeline will continue with Deploy ID extraction and log monitoring..."
+        
+        curl -X POST \
+          -H "Authorization: token ${{ github.token }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Content-Type: application/json" \
+          "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
+          -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
+
+
 
     - name: Step 7 - Extract Deploy ID from logs
       id: extract_deploy_id
@@ -769,7 +832,7 @@ jobs:
         echo "  Reason: $FAILURE_REASON"
 
     - name: Post success comment
-      if: success()
+      if: success() && steps.verify_deployment.outcome == 'success' && env.JOBS_FOUND == 'true'
       run: |
 
         GRAFANA_LINK=""
