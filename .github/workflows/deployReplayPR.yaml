@@ -687,12 +687,11 @@ jobs:
           -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
 
 
-
-    - name: Step 7 - Extract Deploy ID from logs
+    - name: Step 7 - Extract Deploy ID and Version from logs
       id: extract_deploy_id
       if: success() && steps.verify_deployment.outcome == 'success'
       run: |
-        echo "=== Step 7: Extracting Deploy ID from Tier0Feeder logs ==="
+        echo "=== Step 7: Extracting Deploy ID and Version from Tier0Feeder logs ==="
         
         # Extract only the Deploy ID number, filtering out all environment noise
         DEPLOY_ID=$(ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch WMCORE_VERSION="${WMCORE_VERSION}" bash -s << 'EXTRACT_ID' 2>/dev/null
@@ -703,7 +702,6 @@ jobs:
         
         if [ -f "$LOG_FILE" ]; then
             # Wait a bit to ensure logs are written
-
             
             # Search for the Deploy ID pattern in the log file
             DEPLOY_ID=$(grep -o "Deploy ID: [0-9]*" "$LOG_FILE" 2>/dev/null | tail -1 | cut -d' ' -f3)
@@ -739,6 +737,40 @@ jobs:
         else
             echo "Could not extract Deploy ID from logs"
             echo "DEPLOY_ID=NOT_FOUND" >> $GITHUB_ENV
+        fi
+
+        # Extract version number from condor_q output
+        echo "=== Extracting Version Number from condor_q ==="
+        
+        VERSION_NUMBER=$(ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch bash -s << 'EXTRACT_VERSION' 2>/dev/null
+        # Source environment quietly
+        source env.sh >/dev/null 2>&1
+        
+        # Get condor_q output and extract version number (v followed by digits)
+        VERSION=$(condor_q 2>/dev/null | head -10 | grep -o "v[0-9]\{8\}" | head -1)
+        
+        if [ -n "$VERSION" ]; then
+            echo "$VERSION"
+        else
+            # If not found in first 10 lines, try more lines
+            VERSION=$(condor_q 2>/dev/null | grep -o "v[0-9]\{8\}" | head -1)
+            if [ -n "$VERSION" ]; then
+                echo "$VERSION"
+            else
+                echo "NOT_FOUND"
+            fi
+        fi
+        EXTRACT_VERSION
+        )
+        
+        echo "Version number extraction result: $VERSION_NUMBER"
+        
+        if [ -n "$VERSION_NUMBER" ] && [[ "$VERSION_NUMBER" =~ ^v[0-9]{8}$ ]]; then
+            echo "Successfully extracted Version: $VERSION_NUMBER"
+            echo "VERSION_NUMBER=$VERSION_NUMBER" >> $GITHUB_ENV
+        else
+            echo "Could not extract version number from condor_q"
+            echo "VERSION_NUMBER=NOT_FOUND" >> $GITHUB_ENV
         fi
 
     - name: Analyze failure reason
@@ -829,6 +861,20 @@ jobs:
         **📊 Monitoring:**
         Deploy ID not available - check Tier0Feeder logs manually for monitoring"
         fi
+
+        DAS_LINK=""
+        if [ "$VERSION_NUMBER" != "NOT_FOUND" ] && [ -n "$VERSION_NUMBER" ]; then
+            DAS_LINK="
+        **📊 Output Data (DAS):**
+        [DAS Query Results](https://cmsweb.cern.ch/das/request?view=list&limit=50&instance=prod%2Fglobal&input=dataset%3D%2F*%2F*-${VERSION_NUMBER}%2F*) (Version: \`${VERSION_NUMBER}\`)
+        
+        *Note: Output data will be available in DAS when all jobs are completed*"
+        else
+            DAS_LINK="
+        **📊 Output Data (DAS):**
+        Version number not detected - DAS link will be available once jobs start running"
+        fi
+
         COMMENT="✅ **Deployment Successful**
         
         **Configuration:**
@@ -840,6 +886,7 @@ jobs:
         - Patches: \`${PATCH_OPTION}\`
         - Force Stop: \`${FORCE_STOP}\`
         ${GRAFANA_LINK}
+        ${DAS_LINK}
         
         **Deployment completed successfully!** 🎉
         
