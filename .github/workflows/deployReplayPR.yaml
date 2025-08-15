@@ -672,29 +672,14 @@ jobs:
           The pipeline will continue to extract Deploy ID and monitor logs, but **manual verification is recommended**:
           
           1. **Monitor Tier0Feeder logs manually:**
-             \`\`\`bash
-             ssh cmst0@${REPLAY_OPTION}.cern.ch
-             source env.sh
-             tail -f /data/tier0/WMAgent.venv3/srv/wmagent/${WMCORE_VERSION}/install/Tier0Feeder/ComponentLog
-             \`\`\`
-          
           2. **Check for job submissions:**
-             \`\`\`bash
-             condor_q
-             \`\`\`
-          
           3. **Monitor agent status:**
-             \`\`\`bash
-             manage status
-             \`\`\`
           
           **This is normal behavior when:**
           - The system needs more time to initialize
           - No replay jobs are configured to run immediately  
           - Replay workflow depends on external triggers
-          
-          The pipeline will continue with Deploy ID extraction and log monitoring..."
-        
+                  
         curl -X POST \
           -H "Authorization: token ${{ github.token }}" \
           -H "Accept: application/vnd.github.v3+json" \
@@ -900,26 +885,4 @@ jobs:
           -H "Content-Type: application/json" \
           "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
           -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
-
-    - name: Step 8 - Monitor logs
-      id: monitor_logs
-      run: |
-        echo "=== Step 8: Monitoring logs ==="
-        
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP8
-        source env.sh
-        
-        echo "Agent started, now monitoring logs..."
-        
-        echo "Monitoring Tier0Feeder logs for 30 seconds..."
-        timeout 600 tail -f /data/tier0/WMAgent.venv3/srv/wmagent/${WMCORE_VERSION}/install/Tier0Feeder/ComponentLog 2>/dev/null || true
-        
-        echo "Log monitoring completed"
-        
-        echo "Final agent status:"
-        manage status || true
-        
-        echo "Pipeline execution finished successfully"
-        STEP8
-
     
