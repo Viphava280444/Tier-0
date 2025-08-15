@@ -669,7 +669,6 @@ jobs:
           - ✅ No tracebacks found in Tier0Feeder logs
           
           **Next Steps:**
-          The pipeline will continue to extract Deploy ID and monitor logs, but **manual verification is recommended**:
           
           1. **Monitor Tier0Feeder logs manually:**
           2. **Check for job submissions:**
