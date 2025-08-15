@@ -326,7 +326,7 @@ jobs:
         - Patches: \`${PATCH_OPTION}\`
         - Force Stop: \`${FORCE_STOP}\`
         
-        **Deployment is now in progress...** ⏳
+        **The deployment is in progress. You should receive a response within 5–10 minutes.** ⏳
         
         [View workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
         
