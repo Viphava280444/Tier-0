@@ -276,64 +276,12 @@ jobs:
 
         echo "Parsing streams parameter..."
         
-        streams_raw=""
-        if echo "$comment" | grep -q "^streams:"; then
-          streams_content=$(echo "$comment" | awk '
-            /^streams:/ { 
-              found=1; 
-              # Remove "streams:" prefix and capture the rest
-              sub(/^streams:[ \t]*/, ""); 
-              content=$0; 
-              next 
-            }
-            found && /^[a-zA-Z_][a-zA-Z0-9_]*:/ { 
-              # Found next parameter, stop
-              found=0; 
-              next 
-            }
-            found { 
-              # Continue capturing content
-              content = content "\n" $0 
-            }
-            END { 
-              if (found) print content 
-            }
-          ')
-          
-          streams_raw=$(echo "$streams_content" | tr -d '\n\r' | sed 's/[[:space:]]\+/ /g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
-        fi
-        
+        streams_raw=$(echo "$comment" | grep "^streams:" | sed 's/^streams:[[:space:]]*//')
         if [ -z "$streams_raw" ]; then
-          streams_raw="${{ env.DEFAULT_STREAMS }}"
+            streams_raw="${DEFAULT_STREAMS:-[]}"
         fi
-        echo "Streams (raw): $streams_raw"
-        
-        if [ "$streams_raw" = "[]" ] || [ -z "$streams_raw" ]; then
-          streams_clean="[]"
-        else
-          # Enhanced validation - check JSON array format
-          # Remove all whitespace for validation
-          streams_compact=$(echo "$streams_raw" | tr -d '[:space:]')
-          
-          if echo "$streams_compact" | grep -q '^\[.*\]$'; then
-            
-            open_brackets=$(echo "$streams_compact" | tr -cd '[' | wc -c)
-            close_brackets=$(echo "$streams_compact" | tr -cd ']' | wc -c)
-            quotes=$(echo "$streams_compact" | tr -cd '"' | wc -c)
-            
-            if [ "$open_brackets" -eq "$close_brackets" ] && [ $((quotes % 2)) -eq 0 ]; then
-              streams_clean="$streams_raw"
-              echo "Streams JSON validation passed"
-            else
-              echo "Warning: Malformed JSON array (unmatched brackets/quotes), using empty array"
-              streams_clean="[]"
-            fi
-          else
-            echo "Warning: Invalid streams format (not a JSON array), using empty array"
-            streams_clean="[]"
-          fi  
-        fi
-          echo "Streams (cleaned): $streams_clean"
+
+        echo "Streams: $streams_raw"
 
 
         config_name=$(echo "$comment" | grep -E "^config:" | cut -d' ' -f2- | tr -d '\n\r' | xargs 2>/dev/null || true)
@@ -542,27 +490,13 @@ jobs:
                 if grep -q "if __name__ == '__main__':" ReplayOfflineConfiguration.py; then
                     echo "Found target insertion point, adding specifyStreams call..."
                     
-                    echo "    specifyStreams(tier0Config, $STREAMS_CONFIG)" > /tmp/streams_line.py
                
-                    sed -i "/if __name__ == '__main__':/a\\    specifyStreams(tier0Config, $STREAMS_CONFIG)" ReplayOfflineConfiguration.py
-                    
-                    rm -f /tmp/streams_line.py
+                    sed -i "/if __name__ == '__main__':/i\\    specifyStreams(tier0Config, $STREAMS_CONFIG)" ReplayOfflineConfiguration.py
                     
                     if [ $? -eq 0 ]; then
                         echo "Configuration file successfully modified with streams"
                         echo "Streams added: $STREAMS_CONFIG"
                         
-                        # Verify the modification was successful
-                        if grep -q "specifyStreams" ReplayOfflineConfiguration.py; then
-                            echo "Verification: specifyStreams call successfully added"
-                            echo "=== Modified section ==="
-                            grep -A 3 -B 1 "if __name__ == '__main__'" ReplayOfflineConfiguration.py
-                            echo "======================="
-                        else
-                            echo "Warning: specifyStreams call not found after modification"
-                            echo "Reverting to backup..."
-                            mv ReplayOfflineConfiguration.py.backup ReplayOfflineConfiguration.py
-                        fi
                     else
                         echo "Error: sed command failed, reverting to backup"
                         mv ReplayOfflineConfiguration.py.backup ReplayOfflineConfiguration.py
