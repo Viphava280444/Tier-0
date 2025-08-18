@@ -508,8 +508,8 @@ jobs:
       run: |
         echo "=== Step 2: Downloading configuration ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch STREAMS_CONFIG="${STREAMS_CONFIG}" << 'STEP2'
-
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << 'STEP2'
+        STREAMS_CONFIG='${STREAMS_CONFIG}'
         source env.sh
         cd /data/tier0/ReplayPipeline
         
@@ -536,8 +536,7 @@ jobs:
             if grep -q "if __name__ == '__main__':" ReplayOfflineConfiguration.py; then
                 echo "Found target insertion point, adding specifyStreams call..."
                 
-                STREAMS_PYTHON=$(echo "$STREAMS_CONFIG" | sed 's/"/\\"/g')
-                
+                STREAMS_PYTHON="${STREAMS_CONFIG//\"/\\\"}"                
                 sed -i "/if __name__ == '__main__':/i\\ specifyStreams(tier0Config, $STREAMS_PYTHON)\\" ReplayOfflineConfiguration.py
                 
                 if [ $? -eq 0 ]; then
