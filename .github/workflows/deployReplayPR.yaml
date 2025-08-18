@@ -508,8 +508,8 @@ jobs:
       run: |
         echo "=== Step 2: Downloading configuration ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << 'STEP2'
-        STREAMS_CONFIG='${STREAMS_CONFIG}'
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch WGET_URL="${WGET_URL}" STREAMS_CONFIG="${STREAMS_CONFIG}" bash -s << 'STEP2'
+
         source env.sh
         cd /data/tier0/ReplayPipeline
         
