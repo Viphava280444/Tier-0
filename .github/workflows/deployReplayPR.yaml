@@ -276,12 +276,11 @@ jobs:
 
         echo "Parsing streams parameter..."
         
-        streams_raw=$(echo "$comment" | grep "^streams:" | sed 's/^streams:[[:space:]]*//')
+        streams_raw=$(printf '%s\n' "$comment" | grep "^streams:" | sed 's/^streams:[[:space:]]*//')
         if [ -z "$streams_raw" ]; then
-            streams_raw="${{ env.DEFAULT_STREAMS }}"
+          streams_raw="${{ env.DEFAULT_STREAMS }}"
         fi
-
-        echo "Streams: $streams_raw"
+        printf 'Streams: %s\n' "$streams_raw"
 
 
         config_name=$(echo "$comment" | grep -E "^config:" | cut -d' ' -f2- | tr -d '\n\r' | xargs 2>/dev/null || true)
