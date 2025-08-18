@@ -507,6 +507,8 @@ jobs:
       id: download_config
       run: |
             echo "=== Step 2: Downloading configuration ==="
+            
+            # Base64 encode the streams config to safely pass through shell
             STREAMS_B64=$(echo "${STREAMS_CONFIG}" | base64 -w 0)
 
             ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch WGET_URL="${WGET_URL}" STREAMS_B64="${STREAMS_B64}" bash -s << 'STEP2'
@@ -528,17 +530,23 @@ jobs:
             else
                 echo "Configuration file already named correctly or not found"
             fi
+            
+            # Decode streams config
             STREAMS_CONFIG=$(echo "${STREAMS_B64}" | base64 -d)
+            echo "Decoded streams config: $STREAMS_CONFIG"
+            
             if [ "$STREAMS_CONFIG" != "[]" ] && [ ! -z "$STREAMS_CONFIG" ]; then
                 echo "Adding streams configuration: $STREAMS_CONFIG"
+                
+                # Create backup
+                cp ReplayOfflineConfiguration.py ReplayOfflineConfiguration.py.backup
                 
                 if grep -q "if __name__ == '__main__':" ReplayOfflineConfiguration.py; then
                     echo "Found target insertion point, adding specifyStreams call..."
                     
-                    echo "specifyStreams(tier0Config, $STREAMS_CONFIG)" > /tmp/streams_line.py
-                    
-                    sed -i "/if __name__ == '__main__':/r /tmp/streams_line.py" ReplayOfflineConfiguration.py
-                    sed -i "/if __name__ == '__main__':/i\\" ReplayOfflineConfiguration.py
+                    echo "    specifyStreams(tier0Config, $STREAMS_CONFIG)" > /tmp/streams_line.py
+               
+                    sed -i "/if __name__ == '__main__':/a\\    specifyStreams(tier0Config, $STREAMS_CONFIG)" ReplayOfflineConfiguration.py
                     
                     rm -f /tmp/streams_line.py
                     
@@ -546,8 +554,12 @@ jobs:
                         echo "Configuration file successfully modified with streams"
                         echo "Streams added: $STREAMS_CONFIG"
                         
+                        # Verify the modification was successful
                         if grep -q "specifyStreams" ReplayOfflineConfiguration.py; then
                             echo "Verification: specifyStreams call successfully added"
+                            echo "=== Modified section ==="
+                            grep -A 3 -B 1 "if __name__ == '__main__'" ReplayOfflineConfiguration.py
+                            echo "======================="
                         else
                             echo "Warning: specifyStreams call not found after modification"
                             echo "Reverting to backup..."
@@ -571,6 +583,7 @@ jobs:
             
             echo "Configuration setup completed"
             STEP2
+
     - name: Step 3 - Apply patches (if requested)
       id: apply_patches
       run: |
