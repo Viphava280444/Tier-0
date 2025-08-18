@@ -276,10 +276,24 @@ jobs:
 
         echo "Parsing streams parameter..."
         
-        streams_raw=$(printf '%s\n' "$comment" | sed -n 's/^streams:[[:space:]]*\(\[.*\]\)/\1/p')
+        
+        if command -v jq >/dev/null 2>&1; then
+          streams_raw=$(printf '%s\n' "$comment" | grep -E "^streams:" | cut -d' ' -f2- | tr -d '\n\r' | jq -r '. | tostring' 2>/dev/null || true)
+        else
+          streams_raw=$(printf '%s\n' "$comment" | sed -n 's/^streams:[[:space:]]*\(\[.*\]\)/\1/p')
+        fi
+        
         if [ -z "$streams_raw" ]; then
           streams_raw="${{ env.DEFAULT_STREAMS }}"
         fi
+        
+        if ! echo "$streams_raw" | grep -q '"'; then
+          echo "Warning: Quotes missing in streams_raw, attempting to fix..."
+          # Convert unquoted list to quoted JSON array
+          streams_raw=$(echo "$streams_raw" | sed 's/\[\(.*\)\]/[\1]/' | sed 's/[,[:space:]]\+/,/g' | sed 's/\([[:alnum:]]\+\)/"\1"/g')
+        fi
+        
+        echo "Streams (raw): $streams_raw"
         printf 'Streams: %s\n' "$streams_raw"
 
 
@@ -490,8 +504,7 @@ jobs:
                     echo "Found target insertion point, adding specifyStreams call..."
                     
                
-                STREAMS_ESCAPED=$(echo "$STREAMS_CONFIG" | sed 's/"/\\"/g')
-                sed -i "/if __name__ == '__main__':/i\\specifyStreams(tier0Config, $STREAMS_ESCAPED)" ReplayOfflineConfiguration.py                    
+                sed -i "/if __name__ == '__main__':/i\\specifyStreams(tier0Config, $STREAMS_CONFIG)" ReplayOfflineConfiguration.py                    
                     if [ $? -eq 0 ]; then
                         echo "Configuration file successfully modified with streams"
                         echo "Streams added: $STREAMS_CONFIG"
