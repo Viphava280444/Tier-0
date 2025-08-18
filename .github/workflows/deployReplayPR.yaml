@@ -332,6 +332,7 @@ jobs:
             echo "Warning: Invalid streams format (not a JSON array), using empty array"
             streams_clean="[]"
           fi  
+        fi
           echo "Streams (cleaned): $streams_clean"
 
 
