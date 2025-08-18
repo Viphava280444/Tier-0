@@ -508,8 +508,11 @@ jobs:
       run: |
         echo "=== Step 2: Downloading configuration ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << 'STEP2'
-        STREAMS_CONFIG='${STREAMS_CONFIG}'
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch \
+          STREAMS_CONFIG="${STREAMS_CONFIG}" \
+          WGET_URL="${WGET_URL}" \
+          bash -s << 'STEP2'
+
         source env.sh
         cd /data/tier0/ReplayPipeline
         
@@ -520,10 +523,10 @@ jobs:
         rm -f ReplayOfflineConfiguration.py
         wget "${WGET_URL}"
         
-        CONFIG_FILE=\$(ls *ReplayOfflineConfiguration.py 2>/dev/null | head -1)
-        if [ ! -z "\$CONFIG_FILE" ] && [ "\$CONFIG_FILE" != "ReplayOfflineConfiguration.py" ]; then
-            echo "Renaming \$CONFIG_FILE to ReplayOfflineConfiguration.py"
-            mv "\$CONFIG_FILE" "ReplayOfflineConfiguration.py"
+        CONFIG_FILE=$(ls *ReplayOfflineConfiguration.py 2>/dev/null | head -1)
+        if [ ! -z "$CONFIG_FILE" ] && [ "$CONFIG_FILE" != "ReplayOfflineConfiguration.py" ]; then
+            echo "Renaming $CONFIG_FILE to ReplayOfflineConfiguration.py"
+            mv "$CONFIG_FILE" "ReplayOfflineConfiguration.py"
         else
             echo "Configuration file already named correctly or not found"
         fi
@@ -536,8 +539,10 @@ jobs:
             if grep -q "if __name__ == '__main__':" ReplayOfflineConfiguration.py; then
                 echo "Found target insertion point, adding specifyStreams call..."
                 
-                STREAMS_PYTHON="${STREAMS_CONFIG//\"/\\\"}"                
-                sed -i "/if __name__ == '__main__':/i\\ specifyStreams(tier0Config, $STREAMS_PYTHON)\\" ReplayOfflineConfiguration.py
+                # Use a safer approach for escaping quotes
+                STREAMS_PYTHON="${STREAMS_CONFIG//\"/\\\"}"
+                
+                sed -i "/if __name__ == '__main__':/i\\ specifyStreams(tier0Config, $STREAMS_PYTHON)\\ " ReplayOfflineConfiguration.py
                 
                 if [ $? -eq 0 ]; then
                     echo "Configuration file successfully modified with streams"
@@ -562,7 +567,6 @@ jobs:
             echo "No streams specified, using original configuration"
         fi
 
-        
         echo "Copying configuration to admin directory..."
         rm -f /data/tier0/admin/ReplayOfflineConfiguration.py
         cp /data/tier0/ReplayPipeline/ReplayOfflineConfiguration.py /data/tier0/admin/ReplayOfflineConfiguration.py
