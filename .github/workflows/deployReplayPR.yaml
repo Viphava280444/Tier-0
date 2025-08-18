@@ -190,7 +190,7 @@ jobs:
         📊 **Summary:** ${EMPTY_COUNT} empty, ${BUSY_COUNT} busy, ${ERROR_COUNT} errors (of ${TOTAL_SERVERS} total)
 
         **Detailed Status:**
-        # ${STATUS_LINES}
+        ${STATUS_LINES}
     
         ---"
 
@@ -332,14 +332,14 @@ jobs:
       run: |
         COMMENT="🚀 **Deployment Started**
         
-        **Configuration:**
-        - Server: \`${REPLAY_OPTION}\`
-        - Config: \`${WGET_URL##*/}\`
-        - WMCore: \`${WMCORE_VERSION}\`
-        - T0: \`${T0_VERSION}\`
-        - Python: \`${PYTHON_VERSION}\`
-        - Patches: \`${PATCH_OPTION}\`
-        - Force Stop: \`${FORCE_STOP}\`
+        # **Configuration:**
+        # - Server: \`${REPLAY_OPTION}\`
+        # - Config: \`${WGET_URL##*/}\`
+        # - WMCore: \`${WMCORE_VERSION}\`
+        # - T0: \`${T0_VERSION}\`
+        # - Python: \`${PYTHON_VERSION}\`
+        # - Patches: \`${PATCH_OPTION}\`
+        # - Force Stop: \`${FORCE_STOP}\`
         
         **The deployment is in progress. You should receive a response within 5–10 minutes.** ⏳
         
