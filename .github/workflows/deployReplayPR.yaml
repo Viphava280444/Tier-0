@@ -531,15 +531,13 @@ jobs:
                 echo "Configuration file already named correctly or not found"
             fi
             
-            # Decode streams config
             STREAMS_CONFIG=$(echo "${STREAMS_B64}" | base64 -d)
             echo "Decoded streams config: $STREAMS_CONFIG"
             
             if [ "$STREAMS_CONFIG" != "[]" ] && [ ! -z "$STREAMS_CONFIG" ]; then
                 echo "Adding streams configuration: $STREAMS_CONFIG"
                 
-                # Create backup
-                cp ReplayOfflineConfiguration.py ReplayOfflineConfiguration.py.backup
+               
                 
                 if grep -q "if __name__ == '__main__':" ReplayOfflineConfiguration.py; then
                     echo "Found target insertion point, adding specifyStreams call..."
