@@ -529,20 +529,19 @@ jobs:
         fi
 
         
-        if [ "$STREAMS_CONFIG" != "[]" ] && [ ! -z "$STREAMS_CONFIG" ]; then
+          if [ "$STREAMS_CONFIG" != "[]" ] && [ ! -z "$STREAMS_CONFIG" ]; then
             echo "Adding streams configuration: $STREAMS_CONFIG"
             
             
             if grep -q "if __name__ == '__main__':" ReplayOfflineConfiguration.py; then
                 echo "Found target insertion point, adding specifyStreams call..."
                 
-                STREAMS_ESCAPED=$(printf '%s\n' "$STREAMS_CONFIG" | sed 's/\\/\\\\/g; s/"/\\"/g; s/'"'"'/\\'"'"'/g')
-                
-                echo "specifyStreams(tier0Config, $STREAMS_ESCAPED)" > /tmp/streams_line.py
+                printf 'specifyStreams(tier0Config, %s)\n' "$STREAMS_CONFIG" > /tmp/streams_line.py
                 
                 sed -i "/if __name__ == '__main__':/r /tmp/streams_line.py" ReplayOfflineConfiguration.py
                 sed -i "/if __name__ == '__main__':/i\\" ReplayOfflineConfiguration.py
                 
+                # Clean up
                 rm -f /tmp/streams_line.py
                 
                 if [ $? -eq 0 ]; then
@@ -567,13 +566,13 @@ jobs:
         else
             echo "No streams specified, using original configuration"
         fi
-        
-        echo "Copying configuration to admin directory..."
-        rm -f /data/tier0/admin/ReplayOfflineConfiguration.py
-        cp /data/tier0/ReplayPipeline/ReplayOfflineConfiguration.py /data/tier0/admin/ReplayOfflineConfiguration.py
-        
-        echo "Configuration setup completed"
-        STEP2
+                
+                echo "Copying configuration to admin directory..."
+                rm -f /data/tier0/admin/ReplayOfflineConfiguration.py
+                cp /data/tier0/ReplayPipeline/ReplayOfflineConfiguration.py /data/tier0/admin/ReplayOfflineConfiguration.py
+                
+                echo "Configuration setup completed"
+                STEP2
 
     - name: Step 3 - Apply patches (if requested)
       id: apply_patches
