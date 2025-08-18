@@ -278,7 +278,7 @@ jobs:
         
         streams_raw=$(echo "$comment" | grep "^streams:" | sed 's/^streams:[[:space:]]*//')
         if [ -z "$streams_raw" ]; then
-            streams_raw="${DEFAULT_STREAMS:-[]}"
+            streams_raw="${{ env.DEFAULT_STREAMS }}"
         fi
 
         echo "Streams: $streams_raw"
@@ -315,7 +315,7 @@ jobs:
         echo "T0_VERSION=$t0" >> $GITHUB_ENV
         echo "PYTHON_VERSION=$python" >> $GITHUB_ENV
         echo "FORCE_STOP=$force_stop" >> $GITHUB_ENV
-        echo "STREAMS_CONFIG=$streams_clean" >> $GITHUB_ENV
+        echo "STREAMS_CONFIG=$streams_raw" >> $GITHUB_ENV
         echo "WGET_URL=$url" >> $GITHUB_ENV
 
     - name: Authenticate with Kerberos
