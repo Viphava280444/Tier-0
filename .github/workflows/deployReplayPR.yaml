@@ -491,7 +491,7 @@ jobs:
                     echo "Found target insertion point, adding specifyStreams call..."
                     
                
-                    sed -i "/if __name__ == '__main__':/i\\    specifyStreams(tier0Config, $STREAMS_CONFIG)" ReplayOfflineConfiguration.py
+                    sed -i "/if __name__ == '__main__':/i\\specifyStreams(tier0Config, $STREAMS_CONFIG)" ReplayOfflineConfiguration.py
                     
                     if [ $? -eq 0 ]; then
                         echo "Configuration file successfully modified with streams"
