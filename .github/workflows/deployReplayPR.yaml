@@ -38,6 +38,7 @@ jobs:
         - **patch_repo:** \`${{ env.DEFAULT_PATCH_REPO }}\`
         - **commit:** \`${{ env.DEFAULT_COMMIT }}\`
         - **force_stop:** \`${{ env.DEFAULT_FORCE_STOP }}\`
+        - **streams:** \`${{ env.DEFAULT_STREAMS }} # use single quote only \`
         
         **Allowed Servers:**
         $(echo "${{ env.ALLOWED_SERVERS }}" | tr ',' '\n' | sed 's/^/        - `/' | sed 's/$/`/')
@@ -61,6 +62,7 @@ jobs:
         patch_repo: Viphava/T0
         commit: 5081,5090
         force_stop: Yes
+        streams: ['ParkingDoubleMuonLowMass0', 'ParkingDoubleMuonLowMass1', 'ParkingDoubleMuonLowMass3', 'ParkingSingleMuon1', 'ParkingSingleMuon0', 'ParkingSingleMuon2', 'ParkingSingleMuon3', 'ParkingSingleMuon4', 'ParkingSingleMuon5', 'ParkingSingleMuon6']
         \`\`\`
         
         **Available Parameters:**
