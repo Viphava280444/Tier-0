@@ -933,6 +933,7 @@ jobs:
         - Python: \`${PYTHON_VERSION}\`
         - Patches: \`${PATCH_OPTION}\`
         - Force Stop: \`${FORCE_STOP}\`
+        - Streams: \`${STREAMS_CONFIG}\`
         ${GRAFANA_LINK}
         ${DAS_LINK}
         
@@ -964,6 +965,7 @@ jobs:
         - WMCore: \`${WMCORE_VERSION:-"Not set"}\`
         - T0: \`${T0_VERSION:-"Not set"}\`
         - Force Stop: \`${FORCE_STOP:-"Not set"}\`
+        - Streams: \`${STREAMS_CONFIG}\`
         
         **Troubleshooting Steps:**
         ${TROUBLESHOOTING:-• Check the workflow logs for detailed error messages}
