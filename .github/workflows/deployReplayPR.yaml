@@ -11,6 +11,7 @@ env:
   DEFAULT_PATCH_REPO: "dmwm/T0"
   DEFAULT_FORCE_STOP: "No"
   DEFAULT_COMMIT: "5081"
+  DEFAULT_STREAMS: "[]"
   ALLOWED_SERVERS: "vocms047, vocms0500, vocms05011, vocms05012"
 
 on:
@@ -273,6 +274,67 @@ jobs:
         fi
         echo "Force Stop: $force_stop"
 
+        echo "Parsing streams parameter..."
+        
+        streams_raw=""
+        if echo "$comment" | grep -q "^streams:"; then
+          streams_content=$(echo "$comment" | awk '
+            /^streams:/ { 
+              found=1; 
+              # Remove "streams:" prefix and capture the rest
+              sub(/^streams:[ \t]*/, ""); 
+              content=$0; 
+              next 
+            }
+            found && /^[a-zA-Z_][a-zA-Z0-9_]*:/ { 
+              # Found next parameter, stop
+              found=0; 
+              next 
+            }
+            found { 
+              # Continue capturing content
+              content = content "\n" $0 
+            }
+            END { 
+              if (found) print content 
+            }
+          ')
+          
+          streams_raw=$(echo "$streams_content" | tr -d '\n\r' | sed 's/[[:space:]]\+/ /g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+        fi
+        
+        if [ -z "$streams_raw" ]; then
+          streams_raw="${{ env.DEFAULT_STREAMS }}"
+        fi
+        echo "Streams (raw): $streams_raw"
+        
+        if [ "$streams_raw" = "[]" ] || [ -z "$streams_raw" ]; then
+          streams_clean="[]"
+        else
+          # Enhanced validation - check JSON array format
+          # Remove all whitespace for validation
+          streams_compact=$(echo "$streams_raw" | tr -d '[:space:]')
+          
+          if echo "$streams_compact" | grep -q '^\[.*\]$'; then
+            
+            open_brackets=$(echo "$streams_compact" | tr -cd '[' | wc -c)
+            close_brackets=$(echo "$streams_compact" | tr -cd ']' | wc -c)
+            quotes=$(echo "$streams_compact" | tr -cd '"' | wc -c)
+            
+            if [ "$open_brackets" -eq "$close_brackets" ] && [ $((quotes % 2)) -eq 0 ]; then
+              streams_clean="$streams_raw"
+              echo "Streams JSON validation passed"
+            else
+              echo "Warning: Malformed JSON array (unmatched brackets/quotes), using empty array"
+              streams_clean="[]"
+            fi
+          else
+            echo "Warning: Invalid streams format (not a JSON array), using empty array"
+            streams_clean="[]"
+          fi  
+          echo "Streams (cleaned): $streams_clean"
+
+
         config_name=$(echo "$comment" | grep -E "^config:" | cut -d' ' -f2- | tr -d '\n\r' | xargs 2>/dev/null || true)
         if [ -z "$config_name" ]; then
           config_name="${{ env.DEFAULT_CONFIG }}"
@@ -304,6 +366,7 @@ jobs:
         echo "T0_VERSION=$t0" >> $GITHUB_ENV
         echo "PYTHON_VERSION=$python" >> $GITHUB_ENV
         echo "FORCE_STOP=$force_stop" >> $GITHUB_ENV
+        echo "STREAMS_CONFIG=$streams_clean" >> $GITHUB_ENV
         echo "WGET_URL=$url" >> $GITHUB_ENV
 
     - name: Authenticate with Kerberos
@@ -444,7 +507,8 @@ jobs:
       run: |
         echo "=== Step 2: Downloading configuration ==="
         
-        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch << STEP2
+        ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch STREAMS_CONFIG="${STREAMS_CONFIG}" << 'STEP2'
+
         source env.sh
         cd /data/tier0/ReplayPipeline
         
@@ -462,6 +526,42 @@ jobs:
         else
             echo "Configuration file already named correctly or not found"
         fi
+
+        if [ "$STREAMS_CONFIG" != "[]" ] && [ ! -z "$STREAMS_CONFIG" ]; then
+            echo "Adding streams configuration: $STREAMS_CONFIG"
+            
+            cp ReplayOfflineConfiguration.py ReplayOfflineConfiguration.py.backup
+            
+            if grep -q "if __name__ == '__main__':" ReplayOfflineConfiguration.py; then
+                echo "Found target insertion point, adding specifyStreams call..."
+                
+                STREAMS_PYTHON=$(echo "$STREAMS_CONFIG" | sed 's/"/\\"/g')
+                
+                sed -i "/if __name__ == '__main__':/i\\ specifyStreams(tier0Config, $STREAMS_PYTHON)\\" ReplayOfflineConfiguration.py
+                
+                if [ $? -eq 0 ]; then
+                    echo "Configuration file successfully modified with streams"
+                    echo "Streams added: $STREAMS_CONFIG"
+                    
+                    if grep -q "specifyStreams" ReplayOfflineConfiguration.py; then
+                        echo "Verification: specifyStreams call successfully added"
+                    else
+                        echo "Warning: specifyStreams call not found after modification"
+                        echo "Reverting to backup..."
+                        mv ReplayOfflineConfiguration.py.backup ReplayOfflineConfiguration.py
+                    fi
+                else
+                    echo "Error: sed command failed, reverting to backup"
+                    mv ReplayOfflineConfiguration.py.backup ReplayOfflineConfiguration.py
+                fi
+            else
+                echo "Error: Could not find target insertion point 'if __name__ == \"__main__\":' in configuration file"
+                echo "Using original configuration without streams"
+            fi
+        else
+            echo "No streams specified, using original configuration"
+        fi
+
         
         echo "Copying configuration to admin directory..."
         rm -f /data/tier0/admin/ReplayOfflineConfiguration.py
