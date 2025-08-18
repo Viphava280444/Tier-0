@@ -507,8 +507,9 @@ jobs:
       id: download_config
       run: |
             echo "=== Step 2: Downloading configuration ==="
-            
-            ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch WGET_URL="${WGET_URL}" STREAMS_CONFIG="${STREAMS_CONFIG}" bash -s << 'STEP2'
+            STREAMS_B64=$(echo "${STREAMS_CONFIG}" | base64 -w 0)
+
+            ssh -o StrictHostKeyChecking=no -K cmst0@${REPLAY_OPTION}.cern.ch WGET_URL="${WGET_URL}" STREAMS_B64="${STREAMS_B64}" bash -s << 'STEP2'
 
             source env.sh
             cd /data/tier0/ReplayPipeline
@@ -527,39 +528,39 @@ jobs:
             else
                 echo "Configuration file already named correctly or not found"
             fi
-            
+            STREAMS_CONFIG=$(echo "${STREAMS_B64}" | base64 -d)
             if [ "$STREAMS_CONFIG" != "[]" ] && [ ! -z "$STREAMS_CONFIG" ]; then
                 echo "Adding streams configuration: $STREAMS_CONFIG"
                 
-                # if grep -q "if __name__ == '__main__':" ReplayOfflineConfiguration.py; then
-                #     echo "Found target insertion point, adding specifyStreams call..."
+                if grep -q "if __name__ == '__main__':" ReplayOfflineConfiguration.py; then
+                    echo "Found target insertion point, adding specifyStreams call..."
                     
-                #     echo "specifyStreams(tier0Config, $STREAMS_CONFIG)" > /tmp/streams_line.py
+                    echo "specifyStreams(tier0Config, $STREAMS_CONFIG)" > /tmp/streams_line.py
                     
-                #     sed -i "/if __name__ == '__main__':/r /tmp/streams_line.py" ReplayOfflineConfiguration.py
-                #     sed -i "/if __name__ == '__main__':/i\\" ReplayOfflineConfiguration.py
+                    sed -i "/if __name__ == '__main__':/r /tmp/streams_line.py" ReplayOfflineConfiguration.py
+                    sed -i "/if __name__ == '__main__':/i\\" ReplayOfflineConfiguration.py
                     
-                #     rm -f /tmp/streams_line.py
+                    rm -f /tmp/streams_line.py
                     
-                #     if [ $? -eq 0 ]; then
-                #         echo "Configuration file successfully modified with streams"
-                #         echo "Streams added: $STREAMS_CONFIG"
+                    if [ $? -eq 0 ]; then
+                        echo "Configuration file successfully modified with streams"
+                        echo "Streams added: $STREAMS_CONFIG"
                         
-                #         if grep -q "specifyStreams" ReplayOfflineConfiguration.py; then
-                #             echo "Verification: specifyStreams call successfully added"
-                #         else
-                #             echo "Warning: specifyStreams call not found after modification"
-                #             echo "Reverting to backup..."
-                #             mv ReplayOfflineConfiguration.py.backup ReplayOfflineConfiguration.py
-                #         fi
-                #     else
-                #         echo "Error: sed command failed, reverting to backup"
-                #         mv ReplayOfflineConfiguration.py.backup ReplayOfflineConfiguration.py
-                #     fi
-                # else
-                #     echo "Error: Could not find target insertion point 'if __name__ == \"__main__\":' in configuration file"
-                #     echo "Using original configuration without streams"
-                # fi
+                        if grep -q "specifyStreams" ReplayOfflineConfiguration.py; then
+                            echo "Verification: specifyStreams call successfully added"
+                        else
+                            echo "Warning: specifyStreams call not found after modification"
+                            echo "Reverting to backup..."
+                            mv ReplayOfflineConfiguration.py.backup ReplayOfflineConfiguration.py
+                        fi
+                    else
+                        echo "Error: sed command failed, reverting to backup"
+                        mv ReplayOfflineConfiguration.py.backup ReplayOfflineConfiguration.py
+                    fi
+                else
+                    echo "Error: Could not find target insertion point 'if __name__ == \"__main__\":' in configuration file"
+                    echo "Using original configuration without streams"
+                fi
             else
                 echo "No streams specified, using original configuration"
             fi
