@@ -190,7 +190,7 @@ jobs:
         📊 **Summary:** ${EMPTY_COUNT} empty, ${BUSY_COUNT} busy, ${ERROR_COUNT} errors (of ${TOTAL_SERVERS} total)
 
         **Detailed Status:**
-        ${STATUS_LINES}
+        # ${STATUS_LINES}
     
         ---"
 
