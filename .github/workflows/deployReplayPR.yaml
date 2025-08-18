@@ -74,8 +74,8 @@ jobs:
         - \`patch:\` - Use \"Patch\" to enable patching
         - \`patch_repo:\` - GitHub repository for patches (format: owner/repo)
         - \`commit:\` - Comma-separated PR numbers for patches
-        - \`force_stop:\` - Use \"Yes\" to force stop running jobs"
-        - \`streams:\` - Select specific stream
+        - \`force_stop:\` - Use \"Yes\" to force stop running jobs
+        - \`streams:\` - Select specific stream"
 
         
         curl -X POST \
