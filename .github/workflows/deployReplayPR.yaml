@@ -86,31 +86,19 @@ jobs:
           "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
           -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
 
-  check-server-status:
-    if: github.event.issue.pull_request && contains(github.event.comment.body, '/check-servers')
-    runs-on: cmst0
-    
-    steps:
-    - name: Authenticate with Kerberos
-      id: kerberos
-      run: |
-        kinit cmst0@CERN.CH -k -t /home/cmsbld/cmst0.keytab
-        echo "Kerberos authentication successful"
-
     - name: Check all servers status
       id: check_all_servers
       run: |
         echo "=== Checking status of all servers ==="
         
-        # Function to get server size
         get_server_size() {
           local server=$1
           echo "${{ env.SERVER_SIZES }}" | tr ',' '\n' | grep "^${server}:" | cut -d':' -f2 | tr -d ' '
         }
         
-        EMPTY_SERVERS=()
-        BUSY_SERVERS=()
-        ERROR_SERVERS=()
+        EMPTY_SERVERS=""
+        BUSY_SERVERS=""
+        ERROR_SERVERS=""
         
         IFS=',' read -ra SERVERS <<< "${{ env.ALLOWED_SERVERS }}"
         
@@ -152,25 +140,29 @@ jobs:
             JOB_COUNT=$(echo "$SERVER_STATUS" | grep "^SUCCESS:" | cut -d':' -f2)
             
             if [ "$JOB_COUNT" -eq 0 ]; then
-              EMPTY_SERVERS+=("$server_display")
+              EMPTY_SERVERS="${EMPTY_SERVERS}${server_display}|"
             else
-              BUSY_SERVERS+=("$server_display:$JOB_COUNT")
+              BUSY_SERVERS="${BUSY_SERVERS}${server_display}~${JOB_COUNT}|"
             fi
           else
-            ERROR_SERVERS+=("$server_display")
+            ERROR_SERVERS="${ERROR_SERVERS}${server_display}|"
           fi
           
           echo "Server $server checked"
         done
         
+        EMPTY_COUNT=$(echo "$EMPTY_SERVERS" | tr -cd '|' | wc -c)
+        BUSY_COUNT=$(echo "$BUSY_SERVERS" | tr -cd '|' | wc -c)
+        ERROR_COUNT=$(echo "$ERROR_SERVERS" | tr -cd '|' | wc -c)
         TOTAL_SERVERS=${#SERVERS[@]}
-        EMPTY_COUNT=${#EMPTY_SERVERS[@]}
-        BUSY_COUNT=${#BUSY_SERVERS[@]}
-        ERROR_COUNT=${#ERROR_SERVERS[@]}
         
-        echo "EMPTY_SERVERS=${EMPTY_SERVERS[*]}" >> $GITHUB_ENV
-        echo "BUSY_SERVERS=${BUSY_SERVERS[*]}" >> $GITHUB_ENV
-        echo "ERROR_SERVERS=${ERROR_SERVERS[*]}" >> $GITHUB_ENV
+        EMPTY_SERVERS="${EMPTY_SERVERS%|}"
+        BUSY_SERVERS="${BUSY_SERVERS%|}"
+        ERROR_SERVERS="${ERROR_SERVERS%|}"
+        
+        echo "EMPTY_SERVERS=$EMPTY_SERVERS" >> $GITHUB_ENV
+        echo "BUSY_SERVERS=$BUSY_SERVERS" >> $GITHUB_ENV
+        echo "ERROR_SERVERS=$ERROR_SERVERS" >> $GITHUB_ENV
         echo "EMPTY_COUNT=$EMPTY_COUNT" >> $GITHUB_ENV
         echo "BUSY_COUNT=$BUSY_COUNT" >> $GITHUB_ENV
         echo "ERROR_COUNT=$ERROR_COUNT" >> $GITHUB_ENV
@@ -182,22 +174,40 @@ jobs:
         
         STATUS_LINES=""
         
-        for server in $EMPTY_SERVERS; do
-          STATUS_LINES="${STATUS_LINES}🟢 **${server}** - Empty (0 jobs)
+        # Process empty servers
+        if [ -n "$EMPTY_SERVERS" ]; then
+          IFS='|' read -ra EMPTY_ARRAY <<< "$EMPTY_SERVERS"
+          for server in "${EMPTY_ARRAY[@]}"; do
+            if [ -n "$server" ]; then
+              STATUS_LINES="${STATUS_LINES}🟢 **${server}** - Empty (0 jobs)
         "
-        done
+            fi
+          done
+        fi
         
-        for server_info in $BUSY_SERVERS; do
-          server=$(echo $server_info | cut -d':' -f1)
-          jobs=$(echo $server_info | cut -d':' -f2)
-          STATUS_LINES="${STATUS_LINES}🔴 **${server}** - ${jobs} jobs running
+        # Process busy servers  
+        if [ -n "$BUSY_SERVERS" ]; then
+          IFS='|' read -ra BUSY_ARRAY <<< "$BUSY_SERVERS"
+          for server_info in "${BUSY_ARRAY[@]}"; do
+            if [ -n "$server_info" ]; then
+              server=$(echo "$server_info" | cut -d'~' -f1)
+              jobs=$(echo "$server_info" | cut -d'~' -f2)
+              STATUS_LINES="${STATUS_LINES}🔴 **${server}** - ${jobs} jobs running
         "
-        done
+            fi
+          done
+        fi
         
-        for server in $ERROR_SERVERS; do
-          STATUS_LINES="${STATUS_LINES}⚠️ **${server}** - ❌ Connection/Service Error
+        # Process error servers
+        if [ -n "$ERROR_SERVERS" ]; then
+          IFS='|' read -ra ERROR_ARRAY <<< "$ERROR_SERVERS"
+          for server in "${ERROR_ARRAY[@]}"; do
+            if [ -n "$server" ]; then
+              STATUS_LINES="${STATUS_LINES}⚠️ **${server}** - ❌ Connection/Service Error
         "
-        done
+            fi
+          done
+        fi
         
         COMMENT="📋 **Server Status Report**
 
@@ -214,7 +224,6 @@ jobs:
           -H "Content-Type: application/json" \
           "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
           -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
-
 
 
   deploy-the-replay:
