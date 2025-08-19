@@ -13,6 +13,7 @@ env:
   DEFAULT_COMMIT: "5081"
   DEFAULT_STREAMS: "[]"
   ALLOWED_SERVERS: "vocms047, vocms0500, vocms05011, vocms05012"
+  SERVER_SIZES: "vocms047:Big, vocms0500:Big, vocms05011:Small, vocms05012:Small"
 
 on:
   issue_comment:
@@ -101,6 +102,11 @@ jobs:
       run: |
         echo "=== Checking status of all servers ==="
         
+        get_server_size() {
+          local server=$1
+          echo "${{ env.SERVER_SIZES }}" | tr ',' '\n' | grep "^${server}:" | cut -d':' -f2 | tr -d ' '
+        }
+        
         EMPTY_SERVERS=()
         BUSY_SERVERS=()
         ERROR_SERVERS=()
@@ -134,16 +140,23 @@ jobs:
         SERVER_CHECK
         2>&1)
           
+          size=$(get_server_size "$server")
+          if [ -n "$size" ]; then
+            server_display="${server} (${size})"
+          else
+            server_display="${server}"
+          fi
+          
           if echo "$SERVER_STATUS" | grep -q "^SUCCESS:"; then
             JOB_COUNT=$(echo "$SERVER_STATUS" | grep "^SUCCESS:" | cut -d':' -f2)
             
             if [ "$JOB_COUNT" -eq 0 ]; then
-              EMPTY_SERVERS+=("$server")
+              EMPTY_SERVERS+=("$server_display")
             else
-              BUSY_SERVERS+=("$server:$JOB_COUNT")
+              BUSY_SERVERS+=("$server_display:$JOB_COUNT")
             fi
           else
-            ERROR_SERVERS+=("$server")
+            ERROR_SERVERS+=("$server_display")
           fi
           
           echo "Server $server checked"
@@ -201,23 +214,6 @@ jobs:
           "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
           -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
 
-    - name: Post failure comment
-      if: failure()
-      run: |
-        COMMENT="❌ **Server Status Check Failed**
-        
-        There was an error while checking server status.
-        
-        [View detailed logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for troubleshooting.
-        
-        Try running \`/check-servers\` again in a few minutes."
-        
-        curl -X POST \
-          -H "Authorization: token ${{ github.token }}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Content-Type: application/json" \
-          "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
-          -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
 
   deploy-the-replay:
     if: github.event.issue.pull_request && contains(github.event.comment.body, '/deploy-replay')
