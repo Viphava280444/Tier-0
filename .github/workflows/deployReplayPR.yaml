@@ -55,11 +55,11 @@ jobs:
         /deploy-replay
         server: $(echo "${{ env.ALLOWED_SERVERS }}" | cut -d',' -f2)
         config: OXYReplayOfflineConfiguration.py
-        wmcore: 2.4.2rc7
-        t0: 3.5.1
+        wmcore: 2.4.2
+        t0: 3.5.2
         python: 3.12
         patch: Patch
-        patch_repo: Viphava/T0
+        patch_repo: dmwm/T0
         commit: 5081,5090
         force_stop: No
         streams: ['ParkingDoubleMuonLowMass0', 'ParkingDoubleMuonLowMass1', 'ParkingDoubleMuonLowMass3', 'ParkingSingleMuon1', 'ParkingSingleMuon0', 'ParkingSingleMuon2', 'ParkingSingleMuon3', 'ParkingSingleMuon4', 'ParkingSingleMuon5', 'ParkingSingleMuon6']
