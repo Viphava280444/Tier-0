@@ -85,6 +85,17 @@ jobs:
           -H "Content-Type: application/json" \
           "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
           -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
+          
+  check-server-status:
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '/check-servers')
+    runs-on: cmst0
+    
+    steps:
+    - name: Authenticate with Kerberos
+      id: kerberos
+      run: |
+        kinit cmst0@CERN.CH -k -t /home/cmsbld/cmst0.keytab
+        echo "Kerberos authentication successful"
 
     - name: Check all servers status
       id: check_all_servers
