@@ -85,7 +85,7 @@ jobs:
           -H "Content-Type: application/json" \
           "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
           -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
-          
+
   check-server-status:
     if: github.event.issue.pull_request && contains(github.event.comment.body, '/check-servers')
     runs-on: cmst0
@@ -102,9 +102,10 @@ jobs:
       run: |
         echo "=== Checking status of all servers ==="
         
+
         get_server_size() {
           local server=$1
-          echo "${{ env.SERVER_SIZES }}" | tr ',' '\n' | grep "^${server}:" | cut -d':' -f2 | tr -d ' '
+          echo "${{ env.SERVER_SIZES }}" | tr ',' '\n' | sed 's/^ *//' | grep "^${server}:" | cut -d':' -f2 | tr -d ' '
         }
         
         EMPTY_SERVERS=""
