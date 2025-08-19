@@ -174,7 +174,6 @@ jobs:
         
         STATUS_LINES=""
         
-        # Process empty servers
         if [ -n "$EMPTY_SERVERS" ]; then
           IFS='|' read -ra EMPTY_ARRAY <<< "$EMPTY_SERVERS"
           for server in "${EMPTY_ARRAY[@]}"; do
@@ -185,7 +184,6 @@ jobs:
           done
         fi
         
-        # Process busy servers  
         if [ -n "$BUSY_SERVERS" ]; then
           IFS='|' read -ra BUSY_ARRAY <<< "$BUSY_SERVERS"
           for server_info in "${BUSY_ARRAY[@]}"; do
@@ -198,7 +196,6 @@ jobs:
           done
         fi
         
-        # Process error servers
         if [ -n "$ERROR_SERVERS" ]; then
           IFS='|' read -ra ERROR_ARRAY <<< "$ERROR_SERVERS"
           for server in "${ERROR_ARRAY[@]}"; do
