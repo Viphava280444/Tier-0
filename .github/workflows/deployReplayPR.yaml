@@ -105,7 +105,7 @@ jobs:
 
         get_server_size() {
           local server=$1
-          echo "${{ env.SERVER_SIZES }}" | tr ',' '\n' | sed 's/^ *//' | grep "^${server}:" | cut -d':' -f2 | tr -d ' '
+          echo "${{ env.SERVER_SIZES }}" | tr ',' '\n' | sed 's/^ *//' | grep "^${server}:" | cut -d':' -f2 | sed 's/^ *//; s/ *$//'
         }
         
         EMPTY_SERVERS=""
