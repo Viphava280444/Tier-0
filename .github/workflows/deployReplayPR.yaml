@@ -13,7 +13,7 @@ env:
   DEFAULT_COMMIT: "5081"
   DEFAULT_STREAMS: "[]"
   ALLOWED_SERVERS: "vocms047, vocms0500, vocms05011, vocms05012"
-  SERVER_SIZES: "vocms047:Big, vocms0500:Big, vocms05011:Small, vocms05012:Small"
+  SERVER_SIZES: "vocms047:Big machine, vocms0500:Big,vocms05011:Small machine, vocms05012:Small"
 
 on:
   issue_comment:
