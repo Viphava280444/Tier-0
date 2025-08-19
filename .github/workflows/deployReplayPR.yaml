@@ -2,10 +2,10 @@ name: Pipeline for deploy the replay
 
 # GLOBAL CONFIGURATION - CHANGE VALUES HERE ONLY
 env:
-  DEFAULT_SERVER: "vocms05012"
+  DEFAULT_SERVER: "vocms0500"
   DEFAULT_CONFIG: "ReplayOfflineConfiguration.py"
-  DEFAULT_WMCORE: "2.4.2rc7"
-  DEFAULT_T0: "3.5.1"
+  DEFAULT_WMCORE: "2.4.2"
+  DEFAULT_T0: "3.5.2"
   DEFAULT_PYTHON: "3.12"
   DEFAULT_PATCH: "No Patch"
   DEFAULT_PATCH_REPO: "dmwm/T0"
