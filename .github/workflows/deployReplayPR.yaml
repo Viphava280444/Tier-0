@@ -102,6 +102,7 @@ jobs:
       run: |
         echo "=== Checking status of all servers ==="
         
+        # Function to get server size
         get_server_size() {
           local server=$1
           echo "${{ env.SERVER_SIZES }}" | tr ',' '\n' | grep "^${server}:" | cut -d':' -f2 | tr -d ' '
@@ -213,6 +214,7 @@ jobs:
           -H "Content-Type: application/json" \
           "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
           -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
+
 
 
   deploy-the-replay:
@@ -871,7 +873,6 @@ jobs:
 
         fi
         
-        # Store failure information for the comment step
         echo "FAILED_STEP=$FAILED_STEP" >> $GITHUB_ENV
         echo "FAILURE_REASON=$FAILURE_REASON" >> $GITHUB_ENV
         echo "FAILURE_DETAILS=$FAILURE_DETAILS" >> $GITHUB_ENV
