@@ -368,6 +368,47 @@ class Create(DBCreator):
                ) ORGANIZATION INDEX"""
 
         self.create[len(self.create)] = \
+            """CREATE TABLE reprocessing_request (
+                 id              int              GENERATED ALWAYS AS IDENTITY,
+                 input_dataset   varchar2(500)    not null,
+                 run_id          int,
+                 min_lumi        int,
+                 max_lumi        int,
+                 global_tag      varchar2(255)    not null,
+                 cmssw_version   varchar2(255)    not null,
+                 scram_arch      varchar2(50)     not null,
+                 proc_version    int              not null,
+                 scenario        varchar2(255)    not null,
+                 reco_split      int              default 500 not null,
+                 multicore       int              default 8,
+                 write_reco      int              default 0 not null,
+                 write_aod       int              default 1 not null,
+                 write_miniaod   int              default 1 not null,
+                 write_nanoaod   int              default 0 not null,
+                 write_dqm       int              default 1 not null,
+                 alca_skim       varchar2(700),
+                 physics_skim    varchar2(700),
+                 dqm_seq         varchar2(700),
+                 nano_flavour    varchar2(50),
+                 status          varchar2(20)     default 'SUBMITTED' not null,
+                 rucio_rule_id   varchar2(64),
+                 workflow_name   varchar2(255),
+                 fileset_id      int,
+                 error_message   varchar2(2000),
+                 created_at      int              not null,
+                 updated_at      int              not null,
+                 primary key(id)
+               )"""
+
+        self.create[len(self.create)] = \
+            """CREATE SEQUENCE reprocessing_request_SEQ
+               START WITH 1
+               INCREMENT BY 1
+               NOMAXVALUE
+               CACHE 10
+               """
+
+        self.create[len(self.create)] = \
             """CREATE FUNCTION checkForZeroState (value IN int)
                RETURN int DETERMINISTIC IS
                BEGIN
@@ -505,6 +546,9 @@ class Create(DBCreator):
 
         self.indexes[len(self.indexes)] = \
             """CREATE INDEX idx_workflow_monitoring_1 ON workflow_monitoring (checkForZeroState(closeout))"""
+
+        self.indexes[len(self.indexes)] = \
+            """CREATE INDEX idx_reprocessing_request_1 ON reprocessing_request (status)"""
         #
         # Constraints
         #
