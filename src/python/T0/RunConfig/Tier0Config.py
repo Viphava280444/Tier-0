@@ -309,6 +309,8 @@ def createTier0Config():
     
     tier0Config.Global.extraStreamDatasetMap = None
 
+    tier0Config.Global.ReprocessingRequests = []
+
     return tier0Config
 
 def retrieveStreamConfig(config, streamName):
@@ -1293,4 +1295,101 @@ def addTier1Skim(config, skimName, dataTier, primaryDataset, cmsswVersion,
     skimConfig.Node = skimNode
 
     datasetConfig.Tier1Skims.append(skimConfig)
+    return
+
+
+def addReprocessingRequest(config, inputDataset, globalTag, cmsswVersion,
+                           scramArch, procVersion, scenario, **options):
+    """
+    _addReprocessingRequest_
+
+    Add a reprocessing-from-RAW request to the configuration.
+
+    Required parameters:
+      inputDataset - DBS dataset path, must end in /RAW
+      globalTag    - conditions GlobalTag
+      cmsswVersion - CMSSW release to use
+      scramArch    - SCRAM architecture
+      procVersion  - processing version (int)
+      scenario     - CMSSW scenario name
+
+    Optional parameters (via **options):
+      writeTiers     - list of output tiers (default: ["AOD", "MINIAOD", "DQM"])
+      alcaSkims      - list of AlcaSkim names (default: [])
+      physicsSkims   - list of physics skim names (default: [])
+      dqmSequences   - list of DQM sequences (default: [])
+      nanoFlavour    - NanoAOD flavour (default: None)
+      recoSplit      - events per job (default: 500)
+      multicore      - number of cores (default: 8)
+    """
+    request = {
+        'InputDataset': inputDataset,
+        'GlobalTag': globalTag,
+        'CMSSWVersion': cmsswVersion,
+        'ScramArch': scramArch,
+        'ProcVersion': procVersion,
+        'Scenario': scenario,
+        'WriteTiers': options.get('writeTiers', ["AOD", "MINIAOD", "DQM"]),
+        'AlcaSkims': options.get('alcaSkims', []),
+        'PhysicsSkims': options.get('physicsSkims', []),
+        'DqmSequences': options.get('dqmSequences', []),
+        'NanoFlavour': options.get('nanoFlavour', None),
+        'RecoSplit': options.get('recoSplit', 500),
+        'Multicore': options.get('multicore', 8),
+        'RunId': None,
+        'MinLumi': None,
+        'MaxLumi': None,
+    }
+
+    config.Global.ReprocessingRequests.append(request)
+    return
+
+
+def setReprocessingOutputTiers(config, requestIndex, writeTiers):
+    """
+    _setReprocessingOutputTiers_
+
+    Configure which output tiers to produce for a reprocessing request.
+
+    requestIndex - index of the request in ReprocessingRequests list
+    writeTiers   - list of tier names, e.g. ["RECO", "AOD", "MINIAOD", "DQM"]
+    """
+    if requestIndex >= len(config.Global.ReprocessingRequests):
+        raise RuntimeError("Reprocessing request index %d out of range" % requestIndex)
+    config.Global.ReprocessingRequests[requestIndex]['WriteTiers'] = writeTiers
+    return
+
+
+def setReprocessingAlcaSkims(config, requestIndex, alcaSkims):
+    """
+    _setReprocessingAlcaSkims_
+
+    Configure AlcaSkims for a reprocessing request.
+
+    requestIndex - index of the request in ReprocessingRequests list
+    alcaSkims    - list of AlcaSkim names
+    """
+    if requestIndex >= len(config.Global.ReprocessingRequests):
+        raise RuntimeError("Reprocessing request index %d out of range" % requestIndex)
+    config.Global.ReprocessingRequests[requestIndex]['AlcaSkims'] = alcaSkims
+    return
+
+
+def setReprocessingRunFilter(config, requestIndex, runId=None, minLumi=None, maxLumi=None):
+    """
+    _setReprocessingRunFilter_
+
+    Scope a reprocessing request to a specific run and/or lumi range.
+
+    requestIndex - index of the request in ReprocessingRequests list
+    runId        - specific run number (optional)
+    minLumi      - minimum lumi section (optional)
+    maxLumi      - maximum lumi section (optional)
+    """
+    if requestIndex >= len(config.Global.ReprocessingRequests):
+        raise RuntimeError("Reprocessing request index %d out of range" % requestIndex)
+    request = config.Global.ReprocessingRequests[requestIndex]
+    request['RunId'] = runId
+    request['MinLumi'] = minLumi
+    request['MaxLumi'] = maxLumi
     return
